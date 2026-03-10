@@ -19,3 +19,34 @@ async def live_telemetry_view(request: Request):
 async def settings_view(request: Request):
     """Returns the partial HTML for User Preferences."""
     return templates.TemplateResponse("pages/settings.html", {"request": request})
+
+from backend.schemas.optimization import OptimizationRequest
+from backend.services.optimiser import DepartureOptimiser
+import time
+
+# Create a module-level optimizer instance for the UI
+ui_optimiser = DepartureOptimiser(step_minutes=5)
+
+@router.post("/trip/calculate", response_class=HTMLResponse)
+async def ui_trip_calculate(request: Request):
+    form_data = await request.form()
+    origin = form_data.get("origin", "Bandra_West")
+    destination = form_data.get("destination", "Lower_Parel")
+    
+    # Calculate dummy future deadline for demonstration based on the mode selected
+    mode = form_data.get("mode", "fastest")
+    deadline = time.time() + (3600 * 5) # 5 hours from now
+    
+    options = ui_optimiser.compute_pareto_frontier(
+        origin=origin,
+        destination=destination,
+        deadline=deadline,
+        hours=12
+    )
+    
+    return templates.TemplateResponse("partials/trip_results.html", {
+        "request": request, 
+        "options": options,
+        "origin": origin,
+        "destination": destination
+    })

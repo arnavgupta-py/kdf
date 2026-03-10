@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Phase 6: Frontend UI & HTMX Integration**
+  - Built the `Trip Planner View` orchestrating dynamic origin/destination configuration with integrated Goal Heuristics (Time / Reliability).
+  - Wired HTMX capabilities posting directly into the Phase 5 Scheduler APIs `POST /api/v1/frontend/trip/calculate` without full page reloading.
+  - Implemented real-time dynamic rendering of the computed Stochastic Pareto Frontier with Alpine.js notification bindings.
 - **Phase 5: Departure Optimiser & Parking Intelligence**
   - Implemented `DepartureOptimiser` generating a pareto optimal stochastic frontier of departure options evaluating dynamic variants in delay and precision expectations over constrained deadlines.
   - Implemented `ParkingIntelligence` leveraging simulated land-use probability kernels (Commercial/Residential/Transit) for real-time occupancy heuristics.

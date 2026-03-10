@@ -8,7 +8,8 @@
         <p class="text-cronos-muted text-sm mb-8 font-medium">Causal Engine Stochastic Optimisation</p>
         
         <form x-data="{ mode: 'fastest', processing: false }" 
-              @submit.prevent="processing = true; setTimeout(() => { processing = false; $dispatch('notify', {msg: 'Optimization Complete. Rendering Pareto Frontier.', type: 'success'}) }, 2000)" 
+              @submit="processing = true; setTimeout(() => { processing = false; $dispatch('notify', {msg: 'Optimization Complete. Rendering Pareto Frontier.', type: 'success'}) }, 2000)" 
+              hx-post="/api/v1/frontend/trip/calculate" hx-target=".htmx-result-pane" hx-indicator="#loading"
               class="flex flex-col gap-5">
             
             <div class="relative group">
@@ -60,7 +61,7 @@
     </div>
 
     <!-- Right Map Placeholder -->
-    <div class="flex-1 glass-panel rounded-3xl border border-surface/50 relative overflow-hidden flex items-center justify-center p-6 min-h-[400px]">
+    <div class="flex-1 glass-panel rounded-3xl border border-surface/50 relative overflow-hidden flex items-center justify-center p-6 min-h-[400px] htmx-result-pane">
         <!-- Map Background Grid Pattern representing network -->
         <div class="absolute inset-0" style="background-image: linear-gradient(rgba(56, 189, 248, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(56, 189, 248, 0.1) 1px, transparent 1px); background-size: 50px 50px; transform: perspective(500px) rotateX(60deg) scale(2.5) translateY(-50px);">
         </div>
