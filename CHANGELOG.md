@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Phase 4: Causal Traffic Engine**
+  - Designed probabilistic `STGNNModel` using PyTorch Geometric integrating spatial GCN convolutions and GRU for temporal forecasting.
+  - Implemented `CausalInferenceEngine` leveraging `dowhy` to identify and quantify systemic causal triggers of congestion like accidents and weather.
+  - Built `GraphBuilder` fetching real street networks on-the-fly (`Bandra, Mumbai`) through `osmnx` and processing it into PyTorch `Data`.
+  - Stood up `/api/v1/forecast/predict` probabilistic endpoint exposing causal traffic intel with dynamic horizons and bounded stochastic confidence intervals.
 - **Phase 2: Core Data Models & APIs**
   - Defined SQLAlchemy schemas for `User` and `Journey` tracking.
   - Defined PyDantic request/response validation schemas.

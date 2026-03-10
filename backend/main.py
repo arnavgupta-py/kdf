@@ -37,7 +37,10 @@ async def read_root(request: Request):
 
 # Included external routes
 from backend.api.users import router as users_router
+from backend.api.forecast import router as forecast_router
+
 app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
+app.include_router(forecast_router, prefix=f"{settings.API_V1_STR}/forecast", tags=["forecast"])
 
 if __name__ == "__main__":
     import uvicorn
