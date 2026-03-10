@@ -1,0 +1,131 @@
+<div class="h-full flex flex-col gap-6 animate-[fadeIn_0.5s_ease-out]">
+    
+    <!-- Top KPI Row -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="glass-panel p-5 rounded-2xl border border-surface/50 border-t-cronos-accent/80 hover:bg-surface_hover transition relative overflow-hidden group">
+            <div class="absolute -right-4 -top-4 w-16 h-16 bg-cronos-accent opacity-10 rounded-full group-hover:scale-150 transition-transform"></div>
+            <p class="text-xs text-cronos-muted uppercase font-bold tracking-widest mb-1">Total Probes Ingested</p>
+            <div class="flex items-baseline gap-2">
+                <h3 class="text-3xl font-extrabold text-white glow-text">14.2M</h3>
+                <span class="text-sm font-medium text-emerald-400">+10k/sec</span>
+            </div>
+        </div>
+        
+        <div class="glass-panel p-5 rounded-2xl border border-surface/50 border-t-purple-500/80 hover:bg-surface_hover transition relative overflow-hidden group">
+            <div class="absolute -right-4 -top-4 w-16 h-16 bg-purple-500 opacity-10 rounded-full group-hover:scale-150 transition-transform"></div>
+            <p class="text-xs text-cronos-muted uppercase font-bold tracking-widest mb-1">Active Vehicles</p>
+            <div class="flex items-baseline gap-2">
+                <h3 class="text-3xl font-extrabold text-white glow-text">105.4K</h3>
+                <span class="text-sm font-medium text-emerald-400 flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg> 2.1%</span>
+            </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl border border-surface/50 border-t-rose-500/80 hover:bg-surface_hover transition relative overflow-hidden group">
+            <div class="absolute -right-4 -top-4 w-16 h-16 bg-rose-500 opacity-10 rounded-full group-hover:scale-150 transition-transform"></div>
+            <p class="text-xs text-cronos-muted uppercase font-bold tracking-widest mb-1">Congested Nodes</p>
+            <div class="flex items-baseline gap-2">
+                <h3 class="text-3xl font-extrabold text-white glow-text text-rose-400">1,204</h3>
+                <span class="text-sm font-medium text-rose-500 flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg> 8%</span>
+            </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl border border-surface/50 border-t-indigo-500/80 hover:bg-surface_hover transition relative overflow-hidden group">
+            <div class="absolute -right-4 -top-4 w-16 h-16 bg-indigo-500 opacity-10 rounded-full group-hover:scale-150 transition-transform"></div>
+            <p class="text-xs text-cronos-muted uppercase font-bold tracking-widest mb-1">Rust CPU Load</p>
+            <div class="flex items-baseline gap-2">
+                <h3 class="text-3xl font-extrabold text-white glow-text">12.4%</h3>
+                <span class="text-sm font-medium text-cronos-muted">gRPC 2ms p99</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Telemetry Stream Grid -->
+    <div class="flex-1 flex flex-col xl:flex-row gap-6">
+        
+        <!-- Left Data Feed -->
+        <div class="w-full xl:w-1/3 flex flex-col gap-6">
+            <div class="glass-panel rounded-[2rem] border border-surface/50 flex-1 flex flex-col overflow-hidden">
+                <div class="p-6 border-b border-surface/50 bg-black/20 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+                           <span class="relative flex h-3 w-3">
+                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                             <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+                           </span>
+                           Signal Disruptions
+                        </h3>
+                    </div>
+                </div>
+                <div class="p-6 space-y-4 flex-1 overflow-y-auto" x-data="{ events: [
+                    { id: '1', node: 'Bandra Reclamation', severity: 'High', prob: '89%' },
+                    { id: '2', node: 'WEH Checknaka', severity: 'Medium', prob: '64%' },
+                    { id: '3', node: 'Sion Circle', severity: 'High', prob: '92%' },
+                    { id: '4', node: 'SV Road', severity: 'Low', prob: '21%' },
+                ]}">
+                    
+                    <template x-for="event in events" :key="event.id">
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-surface hover:bg-surface_hover transition border border-surface/50">
+                            <div>
+                                <div class="text-sm font-bold text-white" x-text="event.node"></div>
+                                <div class="text-xs text-cronos-muted font-mono">NODE_HASH_<span x-text="event.id"></span></div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs font-bold uppercase" 
+                                     :class="event.severity === 'High' ? 'text-rose-400' : event.severity === 'Medium' ? 'text-amber-400' : 'text-emerald-400'"
+                                     x-text="event.severity"></div>
+                                <div class="text-xs text-cronos-muted">Prob: <span x-text="event.prob"></span></div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Main Visualizer -->
+        <div class="flex-1 glass-panel rounded-[2rem] border border-surface/50 relative overflow-hidden flex flex-col p-8">
+            <div class="absolute inset-0 z-0 opacity-40 mix-blend-screen" style="background-image: radial-gradient(circle at center, rgba(16, 185, 129, 0.15) 0, transparent 60%); background-size: 100% 100%;"></div>
+            
+            <div class="relative z-10 flex justify-between items-start mb-auto">
+                <div>
+                    <h2 class="text-3xl font-extrabold text-white tracking-widest glow-text">Occupancy Map</h2>
+                    <p class="text-cronos-muted text-sm mt-1 mb-8 max-w-sm">Translating high-frequency Rust telemetry into causal spatiotemporal graph nodes.</p>
+                </div>
+                
+                <button class="bg-surface border border-surface hover:bg-surface_hover hover:border-cronos-accent/50 text-cronos-accent font-bold px-5 py-2 rounded-full text-sm transition-all shadow-lg flex items-center gap-2">
+                    <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Streaming gRPC
+                </button>
+            </div>
+
+            <!-- Visualization Mockup Container -->
+            <div class="flex-1 relative border border-surface/50 bg-black/40 rounded-3xl overflow-hidden min-h-[400px]">
+                <!-- Network Grid Animation -->
+                <div class="absolute inset-0 flex items-center justify-center opacity-80" style="background-image: 
+                    linear-gradient(to right, rgba(56, 189, 248, 0.05) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(56, 189, 248, 0.05) 1px, transparent 1px); background-size: 60px 60px;">
+                    
+                    <!-- Simulating nodes pulsing -->
+                    <div class="absolute top-[30%] left-[40%] w-4 h-4 bg-emerald-400 rounded-full shadow-[0_0_20px_rgba(16,185,129,0.8)] animate-pulse"></div>
+                    <div class="absolute top-[45%] left-[60%] w-6 h-6 bg-rose-500 rounded-full shadow-[0_0_30px_rgba(244,63,94,0.8)] animate-pulse" style="animation-delay: 500ms;"></div>
+                    <div class="absolute top-[70%] left-[30%] w-3 h-3 bg-emerald-400 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.8)] animate-pulse" style="animation-delay: 1000ms;"></div>
+                    <div class="absolute top-[20%] left-[70%] w-5 h-5 bg-amber-400 rounded-full shadow-[0_0_25px_rgba(251,191,36,0.8)] animate-pulse" style="animation-delay: 1500ms;"></div>
+                    
+                    <!-- Connecting lines -->
+                    <svg class="absolute inset-0 w-full h-full pointer-events-none opacity-40">
+                        <line x1="40%" y1="30%" x2="60%" y2="45%" stroke="rgba(244,63,94,0.5)" stroke-width="2" class="animate-pulse" />
+                        <line x1="40%" y1="30%" x2="30%" y2="70%" stroke="rgba(16,185,129,0.5)" stroke-width="2" />
+                        <line x1="60%" y1="45%" x2="70%" y2="20%" stroke="rgba(251,191,36,0.5)" stroke-width="3" />
+                    </svg>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
