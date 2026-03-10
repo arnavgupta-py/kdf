@@ -10,6 +10,11 @@ All notable changes to this project will be documented in this file.
   - Implemented `CausalInferenceEngine` leveraging `dowhy` to identify and quantify systemic causal triggers of congestion like accidents and weather.
   - Built `GraphBuilder` fetching real street networks on-the-fly (`Bandra, Mumbai`) through `osmnx` and processing it into PyTorch `Data`.
   - Stood up `/api/v1/forecast/predict` probabilistic endpoint exposing causal traffic intel with dynamic horizons and bounded stochastic confidence intervals.
+- **Phase 3: Rust Telemetry Engine**
+  - Configured Tokio and Axum workspace in Rust for high-throughput HTTP ingestion routing.
+  - Built thread-safe OccupancyMap using `dashmap` to track live vehicle densities segment-wise.
+  - Implemented `get_occupancy_map` via `tonic` gRPC to expose internal states to Python ML pipeline.
+  - Generated and finalized Python proxy bindings leveraging `grpcio`.
 - **Phase 2: Core Data Models & APIs**
   - Defined SQLAlchemy schemas for `User` and `Journey` tracking.
   - Defined PyDantic request/response validation schemas.
