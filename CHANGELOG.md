@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Phase 2: Core Data Models & APIs**
+  - Defined SQLAlchemy schemas for `User` and `Journey` tracking.
+  - Defined PyDantic request/response validation schemas.
+  - Implemented foundational CRUD logic for creating users and updating preferences.
+  - Setup basic API endpoints for User registration mounted to the FastAPI router.
 - **Phase 1: Project Setup & Infrastructure**
   - Initialized Python environment and installed backend dependencies via `uv`.
   - Initialized Rust cargo workspace for telemetry at `backend/telemetry/`.
