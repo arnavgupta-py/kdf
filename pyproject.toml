@@ -22,4 +22,6 @@ dependencies = [
     "osmnx>=2.1.0",
     "pandas>=3.0.1",
     "networkx>=3.6.1",
+    "grpcio>=1.78.0",
+    "grpcio-tools>=1.78.0",
 ]

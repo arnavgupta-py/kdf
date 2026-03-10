@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Phase 5: Departure Optimiser & Parking Intelligence**
+  - Implemented `DepartureOptimiser` generating a pareto optimal stochastic frontier of departure options evaluating dynamic variants in delay and precision expectations over constrained deadlines.
+  - Implemented `ParkingIntelligence` leveraging simulated land-use probability kernels (Commercial/Residential/Transit) for real-time occupancy heuristics.
+  - Exposed optimization APIs (`/api/v1/scheduler/departure-optimiser` and `/api/v1/scheduler/parking-intel`) bridging models.
 - **Phase 4: Causal Traffic Engine**
   - Designed probabilistic `STGNNModel` using PyTorch Geometric integrating spatial GCN convolutions and GRU for temporal forecasting.
   - Implemented `CausalInferenceEngine` leveraging `dowhy` to identify and quantify systemic causal triggers of congestion like accidents and weather.

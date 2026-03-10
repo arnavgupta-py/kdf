@@ -35,12 +35,21 @@ async def log_requests(request: Request, call_next):
 async def read_root(request: Request):
     return templates.TemplateResponse("base.html", {"request": request, "title": "CRONOS Dashboard"})
 
+@app.get("/pages/{page_name}", response_class=HTMLResponse)
+async def deep_link_pages(request: Request, page_name: str):
+    """Deep links into UI pages. HTMX pushes these URLs."""
+    return templates.TemplateResponse("base.html", {"request": request, "title": f"CRONOS | {page_name.capitalize()}"})
+
 # Included external routes
 from backend.api.users import router as users_router
 from backend.api.forecast import router as forecast_router
+from backend.api.scheduler import router as scheduler_router
+from backend.api.frontend import router as frontend_router
 
 app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
 app.include_router(forecast_router, prefix=f"{settings.API_V1_STR}/forecast", tags=["forecast"])
+app.include_router(scheduler_router, prefix=f"{settings.API_V1_STR}/scheduler", tags=["scheduler"])
+app.include_router(frontend_router, prefix=f"{settings.API_V1_STR}/frontend", tags=["frontend"])
 
 if __name__ == "__main__":
     import uvicorn

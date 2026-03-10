@@ -3,19 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title | default("CRONOS - Urban Mobility") }}</title>
+    <title>{{ title | default("CRONOS - Intelligence") }}</title>
     
-    <!-- Tailwind CSS (CDN) -->
+    <!-- Modern Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
             colors: {
+              backdrop: '#0B0F19',
+              surface: 'rgba(255, 255, 255, 0.03)',
+              surface_hover: 'rgba(255, 255, 255, 0.06)',
+              glass: 'rgba(15, 23, 42, 0.7)',
               cronos: {
-                dark: '#0f172a',
-                primary: '#3b82f6',
-                accent: '#10b981',
+                accent: '#38bdf8', // Light blue
+                glow: '#0284c7', // Deeper blue for glow
+                text: '#f1f5f9',
+                muted: '#94a3b8',
+              }
+            },
+            animation: {
+              'blob': 'blob 7s infinite',
+            },
+            keyframes: {
+              blob: {
+                '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                '100%': { transform: 'translate(0px, 0px) scale(1)' },
               }
             }
           }
@@ -23,43 +47,169 @@
       }
     </script>
     
-    <!-- Alpine.js (CDN) -->
+    <style>
+      body {
+        background-color: #0B0F19;
+        color: #f1f5f9;
+        /* Dynamic subtle grid background */
+        background-image: 
+          radial-gradient(circle at center, rgba(56, 189, 248, 0.03) 0, transparent 100%),
+          linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        background-size: 100% 100%, 40px 40px, 40px 40px;
+      }
+      .glass-panel {
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+      }
+      .glow-text {
+        text-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+      }
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.8);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+    </style>
+
+    <!-- Alpine.js & HTMX -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
-    <!-- HTMX (CDN) -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    
-    <!-- Custom Styles (if any) -->
-    <link href="/static/css/custom.css" rel="stylesheet">
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans antialiased h-screen flex flex-col">
-    <!-- Navbar placeholder (if needed, usually in derived templates or included partials) -->
-    <header class="bg-cronos-dark text-white p-4 shadow-md flex justify-between items-center">
-        <div class="text-xl font-bold tracking-wider">CRONOS</div>
-        <nav id="navbar-container">
-            <!-- HTMX dynamic target or include -->
+<body class="font-sans antialiased h-screen w-full flex overflow-hidden relative" hx-boost="true">
+    
+    <!-- Background Animated Blobs -->
+    <div class="absolute top-0 -left-4 w-72 h-72 bg-cronos-glow rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob pointer-events-none"></div>
+    <div class="absolute top-0 -right-4 w-72 h-72 bg-purple-700 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000 pointer-events-none"></div>
+    <div class="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-700 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000 pointer-events-none"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-20 lg:w-64 flex-shrink-0 glass-panel border-r border-surface/50 flex flex-col items-center lg:items-start z-10 transition-all duration-300">
+        <div class="h-20 w-full flex items-center justify-center lg:justify-start lg:pl-8 border-b border-surface/50">
+            <svg class="w-8 h-8 text-cronos-accent glow-text" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            <span class="hidden lg:block ml-3 text-xl font-bold tracking-widest text-white glow-text">CRONOS</span>
+        </div>
+        
+        <nav class="flex flex-col gap-4 mt-8 w-full px-4">
+            <!-- Nav Item: Trip Planning -->
+            <a href="/pages/trip" class="flex items-center p-3 rounded-xl transition-all duration-300 text-cronos-muted hover:text-white hover:bg-surface_hover hover:shadow-[0_0_15px_rgba(56,189,248,0.15)] group relative"
+               hx-get="/api/v1/frontend/trip" hx-target="#main-content" hx-push-url="true">
+                <svg class="w-6 h-6 group-hover:text-cronos-accent transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                <span class="hidden lg:block ml-4 font-medium">Trip Planner</span>
+                <!-- Tooltip for collapsed mode -->
+                <div class="absolute left-14 bg-black text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 lg:hidden pointer-events-none transition-opacity font-medium tracking-wide border border-surface/50">Trip</div>
+            </a>
+
+            <!-- Nav Item: Live Navigation -->
+            <a href="/pages/live" class="flex items-center p-3 rounded-xl transition-all duration-300 text-cronos-muted hover:text-white hover:bg-surface_hover hover:shadow-[0_0_15px_rgba(56,189,248,0.15)] group relative"
+               hx-get="/api/v1/frontend/live" hx-target="#main-content" hx-push-url="true">
+                <svg class="w-6 h-6 group-hover:text-cronos-accent transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="hidden lg:block ml-4 font-medium">Live Telemetry</span>
+            </a>
+
+            <!-- Nav Item: Settings -->
+             <a href="/pages/settings" class="flex items-center p-3 rounded-xl transition-all duration-300 text-cronos-muted hover:text-white hover:bg-surface_hover hover:shadow-[0_0_15px_rgba(56,189,248,0.15)] group relative"
+               hx-get="/api/v1/frontend/settings" hx-target="#main-content" hx-push-url="true">
+                <svg class="w-6 h-6 group-hover:text-cronos-accent transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <span class="hidden lg:block ml-4 font-medium">Preferences</span>
+            </a>
         </nav>
-    </header>
+        
+        <!-- User Profile Avatar (Bottom) -->
+        <div class="mt-auto mb-8 flex items-center p-3 w-full lg:px-6 cursor-pointer opacity-70 hover:opacity-100 transition-opacity">
+            <img src="https://ui-avatars.com/api/?name=User&background=38bdf8&color=fff&rounded=true" alt="User" class="w-10 h-10 rounded-full border border-cronos-accent/50 shadow-[0_0_10px_rgba(56,189,248,0.3)]">
+            <div class="hidden lg:block ml-3">
+                <div class="text-sm font-semibold text-white">Guest User</div>
+                <div class="text-xs text-cronos-muted">Basic Tier</div>
+            </div>
+        </div>
+    </aside>
 
-    <div class="flex-grow flex overflow-hidden">
-        <!-- Sidebar placeholder -->
-        <aside id="sidebar-container" class="w-64 bg-white border-r shadow-sm overflow-y-auto hidden md:block">
-            <!-- HTMX dynamic focus -->
-        </aside>
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col h-full relative z-10 w-full overflow-hidden">
+        
+        <!-- Topbar -->
+        <header class="h-20 w-full flex items-center justify-between px-8 border-b border-surface/30 bg-backdrop/40 backdrop-blur-md">
+            <!-- Global search/command palette -->
+            <div class="relative w-96 flex items-center group">
+                <svg class="w-5 h-5 absolute left-3 text-cronos-muted group-focus-within:text-cronos-accent transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <input type="text" placeholder="Search routes, locations, or commands..." class="w-full bg-surface text-white placeholder-cronos-muted rounded-full py-2.5 pl-10 pr-4 outline-none border border-transparent focus:border-cronos-accent/50 focus:bg-surface_hover transition-all text-sm shadow-inner">
+            </div>
 
-        <!-- Main Content Area -->
-        <main class="flex-grow p-6 overflow-y-auto relative">
+            <div class="flex items-center gap-4">
+                <!-- Status indicator -->
+                <div class="flex items-center gap-2 bg-surface px-4 py-1.5 rounded-full border border-surface">
+                    <span class="relative flex h-2.5 w-2.5">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-xs font-semibold text-cronos-muted tracking-wide uppercase">Rust Engine Online</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic HTMX Container -->
+        <div id="main-content" class="flex-1 overflow-y-auto p-6 lg:p-10 relative scroll-smooth">
             {% block content %}
-            <!-- Page-specific content injected here -->
+            <!-- Fallback content / Default landing -->
+            <div class="flex items-center justify-center h-full">
+                <div class="text-center slide-in">
+                    <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-cronos-accent/10 mb-6 shadow-[0_0_50px_rgba(56,189,248,0.2)]">
+                        <svg class="w-12 h-12 text-cronos-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                    </div>
+                    <h1 class="text-4xl font-extrabold text-white tracking-tight mb-4">Welcome to CRONOS</h1>
+                    <p class="text-lg text-cronos-muted max-w-lg mx-auto leading-relaxed">System is ready. Select a module from the sidebar to begin interacting with the Causal Traffic Engine or Rust Telemetry streams.</p>
+                </div>
+            </div>
             {% endblock %}
-        </main>
+        </div>
+    </main>
+
+    <!-- Global Full-page Loading Indicator (HTMX hook) -->
+    <div id="loading" class="fixed inset-0 bg-backdrop/80 backdrop-blur-sm z-50 hidden flex-col items-center justify-center pointer-events-none transition-opacity">
+        <div class="w-16 h-16 border-4 border-cronos-accent/20 border-t-cronos-accent rounded-full animate-spin shadow-[0_0_15px_rgba(56,189,248,0.5)]"></div>
+        <div class="mt-4 text-cronos-accent font-medium tracking-widest text-sm animate-pulse glow-text">COMPUTING PATHS...</div>
     </div>
 
     <!-- Notification system using Alpine -->
-    <div x-data="{ show: false, message: '' }" 
-         @notify.window="show = true; message = $event.detail; setTimeout(() => show = false, 3000)"
-         class="fixed bottom-4 right-4 z-50">
-        <div x-show="show" x-transition class="bg-cronos-dark text-white px-6 py-3 rounded-md shadow-lg font-medium" x-text="message"></div>
+    <div x-data="{ show: false, message: '', type: 'info' }" 
+         @notify.window="show = true; message = $event.detail.msg; type = $event.detail.type || 'info'; setTimeout(() => show = false, 4000)"
+         class="fixed bottom-6 right-6 z-50">
+        <div x-show="show" x-transition.duration.300ms 
+             class="glass-panel text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 border-l-4"
+             :class="{'border-l-cronos-accent': type==='info', 'border-l-emerald-500': type==='success', 'border-l-rose-500': type==='error'}">
+             <svg x-show="type === 'success'" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+             <svg x-show="type === 'error'" class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+             <svg x-show="type === 'info'" class="w-5 h-5 text-cronos-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+             <span x-text="message" class="font-medium text-sm"></span>
+        </div>
     </div>
+
+    <script>
+        // HTMX Loading indicator logic
+        document.body.addEventListener('htmx:configRequest', function() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('loading').classList.add('flex');
+        });
+        document.body.addEventListener('htmx:afterOnLoad', function() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('loading').classList.remove('flex');
+        });
+    </script>
 </body>
 </html>
