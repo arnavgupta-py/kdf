@@ -7,9 +7,9 @@
 
     <!-- Toggle Cards Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6" x-data="{ 
-        tollAversion: true, 
-        ecoRouting: false, 
-        highConf: true 
+        tollAversion: {{ 'true' if preferences.get('toll_aversion', 1.0) >= 0.5 else 'false' }}, 
+        ecoRouting: {{ 'true' if preferences.get('eco_routing', 0.0) >= 0.5 else 'false' }}, 
+        highConf: {{ 'true' if preferences.get('high_confidence', 1.0) >= 0.5 else 'false' }} 
     }">
         
         <!-- Toll Aversion toggle -->
@@ -90,7 +90,11 @@
 
     <div class="mt-8 flex justify-end">
         <button class="bg-surface hover:bg-surface_hover border border-surface text-white px-8 py-3 rounded-xl font-bold transition-colors shadow-lg"
-                @click="$dispatch('notify', {msg: 'Preferences saved to Causal Engine.', type: 'info'})">
+                hx-put="/api/v1/users/me/preferences"
+                hx-ext="json-enc"
+                hx-vals="js:{toll_aversion: tollAversion, eco_routing: ecoRouting, high_confidence: highConf}"
+                hx-swap="none"
+                @htmx:after-request="if($event.detail.successful) $dispatch('notify', {msg: 'Preferences saved to Causal Engine.', type: 'info'})">
             Save Preferences
         </button>
     </div>
