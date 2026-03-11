@@ -20,7 +20,7 @@ async def get_departure_frontier(request: OptimizationRequest):
         raise HTTPException(status_code=400, detail="Departure deadline must be in the future.")
         
     try:
-        options = optimiser_service.compute_pareto_frontier(
+        options = await optimiser_service.compute_pareto_frontier(
             origin=request.origin,
             destination=request.destination,
             deadline=request.deadline,

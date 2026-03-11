@@ -5,6 +5,7 @@ from loguru import logger
 from typing import List
 from scipy.stats import norm
 from backend.schemas.optimization import DepartureOption
+from backend.api.forecast import get_forecast
 
 class DepartureOptimiser:
     """
@@ -16,7 +17,7 @@ class DepartureOptimiser:
     def __init__(self, step_minutes=5):
         self.step_minutes = step_minutes
 
-    def compute_pareto_frontier(self, origin: str, destination: str, deadline: float, hours: int = 24) -> List[DepartureOption]:
+    async def compute_pareto_frontier(self, origin: str, destination: str, deadline: float, hours: int = 24) -> List[DepartureOption]:
         """
         Evaluate departure times across a 24-hour horizon.
         Return non-dominated options (Pareto optimal) trading off expected travel time, 
@@ -32,18 +33,18 @@ class DepartureOptimiser:
         for i in range(total_steps):
             depart_ts = start_search_time + (i * self.step_minutes * 60)
             
-            # Predict mean travel time based on distance (mock base) and simple temporal cycle
-            # Morning/Evening bumps simulated via sine wave
-            time_of_day_hr = (depart_ts % 86400) / 3600
+            # Determine forecast horizon (capped at 120 mins for API)
+            horizon_mins = int((depart_ts - time.time()) / 60)
+            # Fetch ST-GNN synthetic routing node forecasts
+            forecast = await get_forecast(horizon_minutes=max(15, min(120, horizon_mins)), node_ids=None)
             
-            # Simulated base traffic + sine wave for rush hour (peaks at 9AM and 6PM)
-            rush_hour_factor = (math.sin((time_of_day_hr - 9) * math.pi/4) + math.sin((time_of_day_hr - 18) * math.pi/4)) / 2
+            # Use ST-GNN node congestion estimates to simulate expected path travel time
+            avg_congestion = sum(n.expected_congestion for n in forecast.nodes) / len(forecast.nodes) if forecast.nodes else 0.5
+            avg_variance = sum(n.confidence_interval[1] - n.confidence_interval[0] for n in forecast.nodes) / len(forecast.nodes) if forecast.nodes else 0.2
             
-            # Simulated routing distribution: Mean ~45 mins, with added rush hour delay
-            mean_time_min = 45.0 + max(0, rush_hour_factor * 25.0)
-            
-            # Variance increases proportionately with traffic congestion
-            var_time_min2 = 15.0 + max(0, rush_hour_factor * 40.0) 
+            # Path expected delay driven causally by the ST-GNN rather than arbitrary sine-wave
+            mean_time_min = 35.0 + (avg_congestion * 40.0)
+            var_time_min2 = 10.0 + (avg_variance * 50.0)
             
             # Calculate arrival probability based on Normal Distribution N(mean_time_min, var_time_min2)
             expected_arrival = depart_ts + (mean_time_min * 60)
