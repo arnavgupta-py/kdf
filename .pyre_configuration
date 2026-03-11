@@ -1,0 +1,12 @@
+{
+  "site_package_search_strategy": "pep561",
+  "source_directories": [
+    "/home/arnav/projects/kdf"
+  ],
+  "search_path": [
+    "/home/arnav/projects/kdf/.venv/lib/python3.14/site-packages"
+  ],
+  "exclude": [
+    "/home/arnav/projects/kdf/.venv"
+  ]
+}
