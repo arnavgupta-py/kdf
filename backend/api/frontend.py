@@ -40,7 +40,7 @@ import time
 ui_optimiser = DepartureOptimiser(step_minutes=5)
 
 @router.post("/trip/calculate", response_class=HTMLResponse)
-async def ui_trip_calculate(request: Request):
+async def ui_trip_calculate(request: Request, db: Session = Depends(get_db)):
     form_data = await request.form()
     origin = form_data.get("origin", "Bandra_West")
     destination = form_data.get("destination", "Lower_Parel")
@@ -49,11 +49,15 @@ async def ui_trip_calculate(request: Request):
     mode = form_data.get("mode", "fastest")
     deadline = time.time() + (3600 * 5) # 5 hours from now
     
+    user = get_user_by_email(db, email="guest@cronos.com")
+    prefs = parse_user_preferences(user) if user else {}
+    
     options = await ui_optimiser.compute_pareto_frontier(
         origin=origin,
         destination=destination,
         deadline=deadline,
-        hours=12
+        hours=12,
+        user_preferences=prefs
     )
     
     return templates.TemplateResponse("partials/trip_results.html", {
