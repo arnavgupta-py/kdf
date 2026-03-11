@@ -88,16 +88,31 @@
 
     </div>
 
-    <div class="mt-8 flex justify-end">
-        <button class="bg-surface hover:bg-surface_hover border border-surface text-white px-8 py-3 rounded-xl font-bold transition-colors shadow-lg"
-                hx-put="/api/v1/users/me/preferences"
-                hx-ext="json-enc"
-                hx-vals="js:{toll_aversion: tollAversion, eco_routing: ecoRouting, high_confidence: highConf}"
-                hx-swap="none"
-                @htmx:after-request="if($event.detail.successful) $dispatch('notify', {msg: 'Preferences saved to Causal Engine.', type: 'info'})">
-            Save Preferences
+    <div class="mt-8 flex justify-end" x-data="{ saving: false }">
+        <button class="bg-gradient-to-r from-cronos-glow to-purple-600 hover:from-cronos-accent hover:to-purple-500 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center gap-2 disabled:opacity-60 relative overflow-hidden group"
+                :disabled="saving"
+                @click="
+                    saving = true;
+                    fetch('/api/v1/users/me/preferences', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            toll_aversion:  tollAversion,
+                            eco_routing:    ecoRouting,
+                            high_confidence: highConf
+                        })
+                    })
+                    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                    .then(() => $dispatch('notify', { msg: 'Preferences saved to Causal Engine.', type: 'success' }))
+                    .catch(err => $dispatch('notify', { msg: 'Save failed: ' + err, type: 'error' }))
+                    .finally(() => saving = false);
+                ">
+            <div class="absolute inset-0 w-full h-full bg-white/10 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out skew-x-[-20deg]"></div>
+            <svg x-show="saving" class="animate-spin w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            <span x-text="saving ? 'Saving…' : 'Save Preferences'"></span>
         </button>
     </div>
+
 </div>
 
 <style>

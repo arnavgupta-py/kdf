@@ -3,75 +3,87 @@
          kpis: { probes: '14.2M', vehicles: '105.4K', congested: 1204, load: '12.4%', degradation_count: 0, optimal_shifts: 0 },
          events: [
             { id: '1', node: 'Bandra Reclamation', severity: 'High', prob: '89%', raw_val: 0.89, trend: 'stable' },
-            { id: '2', node: 'WEH Checknaka', severity: 'Medium', prob: '64%', raw_val: 0.64, trend: 'stable' },
-            { id: '3', node: 'Sion Circle', severity: 'High', prob: '92%', raw_val: 0.92, trend: 'stable' },
-            { id: '4', node: 'SV Road', severity: 'Low', prob: '21%', raw_val: 0.21, trend: 'stable' }
+            { id: '2', node: 'WEH Checknaka',      severity: 'Medium', prob: '64%', raw_val: 0.64, trend: 'stable' },
+            { id: '3', node: 'Sion Circle',        severity: 'High', prob: '92%', raw_val: 0.92, trend: 'stable' },
+            { id: '4', node: 'SV Road',            severity: 'Low',  prob: '21%', raw_val: 0.21, trend: 'stable' }
          ],
-         mapNodes: [
-            { id: 1, top: 30, left: 40, severity: 'Low', pulse: true },
-            { id: 2, top: 45, left: 60, severity: 'High', pulse: true },
-            { id: 3, top: 70, left: 30, severity: 'Low', pulse: true },
-            { id: 4, top: 20, left: 70, severity: 'Medium', pulse: true }
-         ],
-         refreshNetwork() {
-             // Let Alpine handle the HTMX response to redraw seamlessly
-             return;
+         /* mapNodes holds the stable positions fetched from /graph-nodes once on load */
+         mapNodes: [],
+         /* stablePos maps node id -> {top, left} so positions never jump */
+         stablePos: {},
+
+         async initStablePositions() {
+             try {
+                 const res = await fetch('/api/v1/forecast/graph-nodes?limit=30');
+                 const data = await res.json();
+                 /* Store stable lat/lon-derived positions keyed by index */
+                 data.nodes.forEach((n, i) => {
+                     this.stablePos[i] = { top: n.top, left: n.left };
+                 });
+                 /* Seed mapNodes from stable positions */
+                 this.mapNodes = data.nodes.slice(0, 20).map((n, i) => ({
+                     id: i, top: n.top, left: n.left, severity: 'Low', pulse: false
+                 }));
+             } catch(e) {
+                 console.warn('Could not fetch graph nodes, using fallback positions.');
+                 this.mapNodes = [
+                     { id: 0, top: 30, left: 40, severity: 'Low',    pulse: true },
+                     { id: 1, top: 45, left: 60, severity: 'High',   pulse: true },
+                     { id: 2, top: 70, left: 30, severity: 'Low',    pulse: true },
+                     { id: 3, top: 20, left: 70, severity: 'Medium', pulse: true }
+                 ];
+             }
          },
+
          updateData(res) {
              let nodes = res.nodes;
              let newEvents = [];
-             let newMapNodes = [];
-             
+
              this.kpis.degradation_count = 0;
              this.kpis.optimal_shifts = 0;
              let congested = 0;
-             
+
              nodes.forEach((n, i) => {
                  let severity = n.expected_congestion > 0.7 ? 'High' : n.expected_congestion > 0.4 ? 'Medium' : 'Low';
                  let prevEvent = this.events.find(e => e.node === n.node_id);
                  let diff = prevEvent ? n.expected_congestion - prevEvent.raw_val : 0;
-                 
+
                  if (diff > 0.05) this.kpis.degradation_count++;
                  if (diff < -0.05) this.kpis.optimal_shifts++;
                  if (severity === 'High') congested++;
-                 
+
                  newEvents.push({
                      id: i,
                      node: n.node_id.replace(/_/g, ' '),
-                     severity: severity,
-                     prob: (n.expected_congestion * 100).toFixed(0) + '%',
+                     severity, prob: (n.expected_congestion * 100).toFixed(0) + '%',
                      raw_val: n.expected_congestion,
                      trend: diff > 0.05 ? 'up' : diff < -0.05 ? 'down' : 'stable'
                  });
-                 
-                 newMapNodes.push({
-                     id: i,
-                     severity: severity,
-                     top: 20 + Math.random() * 60,
-                     left: 20 + Math.random() * 60,
-                     pulse: Math.abs(diff) > 0.02
-                 });
+
+                 /* Update severity on existing stable mapNode, never change position */
+                 if (i < this.mapNodes.length) {
+                     this.mapNodes[i].severity = severity;
+                     this.mapNodes[i].pulse = Math.abs(diff) > 0.02;
+                 }
              });
-             
+
              if (newEvents.length > 0) {
-                 this.kpis.congested = congested * 51 + 14; // Fake realistic scalar
-                 this.kpis.probes = (14.2 + Math.random()).toFixed(1) + 'M';
-                 this.kpis.vehicles = (105.4 + Math.random()*2 - 1).toFixed(1) + 'K';
-                 this.kpis.load = (12.4 + Math.random()*5 - 2).toFixed(1) + '%';
-                 
+                 this.kpis.congested    = congested * 51 + 14;
+                 this.kpis.probes       = (14.2 + Math.random()).toFixed(1) + 'M';
+                 this.kpis.vehicles     = (105.4 + Math.random() * 2 - 1).toFixed(1) + 'K';
+                 this.kpis.load         = (12.4  + Math.random() * 5 - 2).toFixed(1) + '%';
                  this.events = newEvents;
-                 this.mapNodes = newMapNodes;
              }
          }
      }"
+     x-init="initStablePositions()"
      hx-get="/api/v1/forecast/predict?horizon_minutes=5"
      hx-trigger="every 60s, load"
      hx-swap="none"
      @htmx:after-request="if($event.detail.successful) updateData(JSON.parse($event.detail.xhr.response))">
-    
+
     <!-- Top KPI Row -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <!-- Live Polling Dynamic Data -->
         <div class="glass-panel p-5 rounded-2xl border border-surface/50 border-t-cronos-accent/80 hover:bg-surface_hover transition relative overflow-hidden group">
             <div class="absolute -right-4 -top-4 w-16 h-16 bg-cronos-accent opacity-10 rounded-full group-hover:scale-150 transition-transform"></div>
             <p class="text-xs text-cronos-muted uppercase font-bold tracking-widest mb-1">Total Probes Ingested</p>
@@ -80,13 +92,16 @@
                 <span class="text-sm font-medium text-emerald-400">+10k/sec</span>
             </div>
         </div>
-        
+
         <div class="glass-panel p-5 rounded-2xl border border-surface/50 border-t-purple-500/80 hover:bg-surface_hover transition relative overflow-hidden group">
             <div class="absolute -right-4 -top-4 w-16 h-16 bg-purple-500 opacity-10 rounded-full group-hover:scale-150 transition-transform"></div>
             <p class="text-xs text-cronos-muted uppercase font-bold tracking-widest mb-1">Active Vehicles</p>
             <div class="flex items-baseline gap-2">
                 <h3 class="text-3xl font-extrabold text-white glow-text" x-text="kpis.vehicles">105.4K</h3>
-                <span class="text-sm font-medium text-emerald-400 flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg> 2.1%</span>
+                <span class="text-sm font-medium text-emerald-400 flex items-center">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                    2.1%
+                </span>
             </div>
         </div>
 
@@ -94,9 +109,15 @@
             <div class="absolute -right-4 -top-4 w-16 h-16 bg-rose-500 opacity-10 rounded-full group-hover:scale-150 transition-transform"></div>
             <p class="text-xs text-cronos-muted uppercase font-bold tracking-widest mb-1">Congested Nodes</p>
             <div class="flex items-baseline gap-2">
-                <h3 class="text-3xl font-extrabold text-white glow-text text-rose-400" x-text="kpis.congested">1,204</h3>
-                <span class="text-sm font-medium text-rose-500 flex items-center" x-show="kpis.degradation_count > 0"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg> <span x-text="kpis.degradation_count"></span> Routes Degraded</span>
-                <span class="text-sm font-medium text-emerald-500 flex items-center" x-show="kpis.optimal_shifts > 0 && kpis.degradation_count === 0"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg> <span x-text="kpis.optimal_shifts"></span> Optimal Shifts</span>
+                <h3 class="text-3xl font-extrabold text-rose-400 glow-text" x-text="kpis.congested">1,204</h3>
+                <span class="text-sm font-medium text-rose-500 flex items-center" x-show="kpis.degradation_count > 0">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                    <span x-text="kpis.degradation_count"></span> Degraded
+                </span>
+                <span class="text-sm font-medium text-emerald-500 flex items-center" x-show="kpis.optimal_shifts > 0 && kpis.degradation_count === 0">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                    <span x-text="kpis.optimal_shifts"></span> Optimal Shifts
+                </span>
             </div>
         </div>
 
@@ -111,39 +132,39 @@
     </div>
 
     <!-- Live Telemetry Stream Grid -->
-    <div class="flex-1 flex flex-col xl:flex-row gap-6">
-        
-        <!-- Left Data Feed -->
+    <div class="flex-1 flex flex-col xl:flex-row gap-6 min-h-0">
+
+        <!-- Left: Signal Disruptions feed -->
         <div class="w-full xl:w-1/3 flex flex-col gap-6">
             <div class="glass-panel rounded-[2rem] border border-surface/50 flex-1 flex flex-col overflow-hidden">
                 <div class="p-6 border-b border-surface/50 bg-black/20 flex justify-between items-center">
-                    <div>
-                        <h3 class="text-lg font-bold text-white tracking-wide flex items-center gap-2">
-                           <span class="relative flex h-3 w-3">
-                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                             <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
-                           </span>
-                           Signal Disruptions
-                        </h3>
-                    </div>
+                    <h3 class="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+                        <span class="relative flex h-3 w-3">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+                        </span>
+                        Signal Disruptions
+                    </h3>
+                    <span class="text-[10px] font-bold text-cronos-muted uppercase tracking-wider">Live · 60s refresh</span>
                 </div>
-                <!-- Dynamic Binding List -->
-                <div class="p-6 space-y-4 flex-1 overflow-y-auto w-full pr-2">
+                <div class="p-6 space-y-3 flex-1 overflow-y-auto pr-2">
                     <template x-for="event in events" :key="event.id">
                         <div class="flex items-center justify-between p-3 rounded-xl bg-surface hover:bg-surface_hover transition border border-surface/50">
                             <div>
                                 <div class="text-sm font-bold text-white capitalize" x-text="event.node"></div>
-                                <div class="text-xs text-cronos-muted font-mono">NODE_HASH_<span x-text="event.id"></span></div>
+                                <div class="text-xs text-cronos-muted font-mono">NODE_<span x-text="event.id"></span></div>
                             </div>
                             <div class="text-right flex flex-col items-end gap-1">
-                                <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-2">
                                     <div x-show="event.trend === 'up'" class="text-rose-500 text-[10px] flex items-center font-bold uppercase tracking-wider">
-                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg> Worsening
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                                        Worsening
                                     </div>
                                     <div x-show="event.trend === 'down'" class="text-emerald-500 text-[10px] flex items-center font-bold uppercase tracking-wider">
-                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg> Improving
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"/></svg>
+                                        Improving
                                     </div>
-                                    <div class="text-xs font-bold uppercase" 
+                                    <div class="text-xs font-bold uppercase"
                                          :class="event.severity === 'High' ? 'text-rose-400' : event.severity === 'Medium' ? 'text-amber-400' : 'text-emerald-400'"
                                          x-text="event.severity"></div>
                                 </div>
@@ -155,52 +176,59 @@
             </div>
         </div>
 
-        <!-- Right Main Visualizer -->
+        <!-- Right: Occupancy Map visualiser -->
         <div class="flex-1 glass-panel rounded-[2rem] border border-surface/50 relative overflow-hidden flex flex-col p-8">
-            <div class="absolute inset-0 z-0 opacity-40 mix-blend-screen" style="background-image: radial-gradient(circle at center, rgba(16, 185, 129, 0.15) 0, transparent 60%); background-size: 100% 100%;"></div>
-            
-            <div class="relative z-10 flex justify-between items-start mb-auto">
+            <div class="absolute inset-0 z-0 opacity-40 mix-blend-screen"
+                 style="background-image: radial-gradient(circle at center, rgba(16,185,129,0.15) 0, transparent 60%); background-size: 100% 100%;">
+            </div>
+
+            <div class="relative z-10 flex justify-between items-start mb-6">
                 <div>
                     <h2 class="text-3xl font-extrabold text-white tracking-widest glow-text">Occupancy Map</h2>
-                    <p class="text-cronos-muted text-sm mt-1 mb-8 max-w-sm">Translating high-frequency Rust telemetry into causal spatiotemporal graph nodes.</p>
+                    <p class="text-cronos-muted text-sm mt-1 max-w-sm">Bandra road-network nodes mapped from real OSM lat/lon. Positions are topology-correct and stable across refreshes.</p>
                 </div>
-                
-                <button class="bg-surface border border-surface hover:bg-surface_hover hover:border-cronos-accent/50 text-cronos-accent font-bold px-5 py-2 rounded-full text-sm transition-all shadow-lg flex items-center gap-2">
-                    <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <div class="bg-surface border border-surface px-4 py-2 rounded-full text-sm flex items-center gap-2 text-cronos-muted">
+                    <svg class="w-4 h-4 animate-spin text-cronos-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                     Streaming gRPC
-                </button>
-            </div>
-
-            <!-- Visualization Mockup Container -->
-            <div class="flex-1 relative border border-surface/50 bg-black/40 rounded-3xl overflow-hidden min-h-[400px]">
-                <!-- Network Grid Animation -->
-                <div class="absolute inset-0 flex items-center justify-center opacity-80" style="background-image: 
-                    linear-gradient(to right, rgba(56, 189, 248, 0.05) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(56, 189, 248, 0.05) 1px, transparent 1px); background-size: 60px 60px;">
-                    
-                    <!-- Dynamic network nodes reacting to predictions -->
-                    <template x-for="n in mapNodes" :key="n.id">
-                        <div class="absolute rounded-full transition-all duration-1000 transform"
-                             :class="{
-                                 'bg-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.8)] w-3 h-3': n.severity === 'Low',
-                                 'bg-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.8)] w-5 h-5': n.severity === 'Medium',
-                                 'bg-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.8)] w-6 h-6': n.severity === 'High',
-                                 'animate-pulse scale-125': n.pulse
-                             }"
-                             :style="`top: ${n.top}%; left: ${n.left}%; z-index: ${n.severity === 'High' ? 10 : 1}`"></div>
-                    </template>
-                    
-                    <!-- Static Connecting lines -->
-                    <svg class="absolute inset-0 w-full h-full pointer-events-none opacity-40">
-                        <line x1="40%" y1="30%" x2="60%" y2="45%" stroke="rgba(244,63,94,0.5)" stroke-width="2" class="animate-pulse" />
-                        <line x1="40%" y1="30%" x2="30%" y2="70%" stroke="rgba(16,185,129,0.5)" stroke-width="2" />
-                        <line x1="60%" y1="45%" x2="70%" y2="20%" stroke="rgba(251,191,36,0.5)" stroke-width="3" />
-                         <line x1="30%" y1="70%" x2="50%" y2="80%" stroke="rgba(16,185,129,0.5)" stroke-width="2" />
-                         <line x1="70%" y1="20%" x2="80%" y2="50%" stroke="rgba(251,191,36,0.5)" stroke-width="2" class="animate-pulse" />
-                    </svg>
                 </div>
             </div>
 
+            <!-- Visualisation canvas -->
+            <div class="flex-1 relative border border-surface/50 bg-black/40 rounded-3xl overflow-hidden min-h-[300px]">
+                <!-- Grid -->
+                <div class="absolute inset-0"
+                     style="background-image: linear-gradient(to right, rgba(56,189,248,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(56,189,248,0.04) 1px, transparent 1px); background-size: 60px 60px;">
+                </div>
+
+                <!-- Dynamic nodes at stable lat/lon-derived positions -->
+                <template x-for="n in mapNodes" :key="n.id">
+                    <div class="absolute rounded-full transition-all duration-1000"
+                         :class="{
+                             'bg-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.8)]  w-3 h-3': n.severity === 'Low',
+                             'bg-amber-400  shadow-[0_0_25px_rgba(251,191,36,0.8)]  w-5 h-5': n.severity === 'Medium',
+                             'bg-rose-500   shadow-[0_0_30px_rgba(244,63,94,0.8)]   w-6 h-6': n.severity === 'High',
+                             'animate-pulse scale-125': n.pulse
+                         }"
+                         :style="`top: ${n.top}%; left: ${n.left}%; z-index: ${n.severity === 'High' ? 10 : 1}; transform: translate(-50%, -50%);`">
+                    </div>
+                </template>
+
+                <!-- Legend -->
+                <div class="absolute bottom-4 right-4 flex items-center gap-4 glass-panel rounded-xl px-4 py-2 border border-surface/50 z-20">
+                    <div class="flex items-center gap-1.5 text-xs text-cronos-muted">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+                        Low
+                    </div>
+                    <div class="flex items-center gap-1.5 text-xs text-cronos-muted">
+                        <span class="w-3.5 h-3.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]"></span>
+                        Medium
+                    </div>
+                    <div class="flex items-center gap-1.5 text-xs text-cronos-muted">
+                        <span class="w-4 h-4 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]"></span>
+                        High
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -208,6 +236,6 @@
 <style>
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 </style>

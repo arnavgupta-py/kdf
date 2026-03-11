@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -9,10 +10,47 @@ import time
 
 setup_logging()
 
+
+def _seed_database() -> None:
+    """Ensure tables exist and the demo guest user is present."""
+    from backend.db.sqlite import engine, SessionLocal, Base
+    # Import all models so Base.metadata is fully populated before create_all
+    import backend.models.user  # noqa: F401
+    import backend.models.journey  # noqa: F401
+    Base.metadata.create_all(bind=engine)
+
+    db = SessionLocal()
+    try:
+        from backend.services.user_service import get_user_by_email, create_user
+        from backend.schemas.user import UserCreate
+        if not get_user_by_email(db, email="guest@cronos.com"):
+            create_user(
+                db,
+                UserCreate(
+                    email="guest@cronos.com",
+                    full_name="Demo User",
+                    password="cronos-demo",
+                ),
+            )
+            logger.info("Seeded demo user: guest@cronos.com")
+        else:
+            logger.info("Demo user already exists, skipping seed.")
+    finally:
+        db.close()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Run startup tasks before serving requests."""
+    _seed_database()
+    yield
+
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="City-scale Route & Occupancy Network with Optimised Scheduling",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # Static files

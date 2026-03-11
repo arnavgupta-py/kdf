@@ -14,20 +14,41 @@ causal_engine = CausalInferenceEngine()
 import os
 from backend.models.stgnn import STGNNModel
 
-# Initialize the network graph once
+# Initialise the network graph once at module load (warm cache = ~14 ms)
+_canvas_nodes: list = []
 try:
     graph_builder = GraphBuilder("Bandra, Mumbai, India", use_cache=True)
-    # We can fetch the PyTorch Data instantly in memory as a mock initialization
     pyg_data, node_mapping = graph_builder.get_pytorch_geometric_data()
-    logger.info(f"Graph initialized with {pyg_data.num_nodes} nodes.")
-    
-    # Reverse mapping for string IDs -> indices
+    logger.info(f"Graph initialised: {pyg_data.num_nodes} nodes.")
+
+    # Reverse mapping: string OSM ID -> internal index
     reverse_node_mapping = {str(v): k for k, v in node_mapping.items()}
+
+    # Precompute stable canvas positions from real lat/lon for the live map
+    if graph_builder.G is not None:
+        lats = [d.get('y', 0.0) for _, d in graph_builder.G.nodes(data=True)]
+        lons = [d.get('x', 0.0) for _, d in graph_builder.G.nodes(data=True)]
+        lat_min, lat_max = min(lats), max(lats)
+        lon_min, lon_max = min(lons), max(lons)
+        lat_range = max(lat_max - lat_min, 1e-6)
+        lon_range = max(lon_max - lon_min, 1e-6)
+        for node_id, d in graph_builder.G.nodes(data=True):
+            lat = d.get('y', 0.0)
+            lon = d.get('x', 0.0)
+            top  = 95.0 - ((lat - lat_min) / lat_range) * 90.0   # north = top
+            left = 5.0  + ((lon - lon_min) / lon_range) * 90.0
+            _canvas_nodes.append({
+                "id":   str(node_id),
+                "top":  round(top, 2),
+                "left": round(left, 2),
+            })
+        logger.info(f"Precomputed {len(_canvas_nodes)} canvas-mapped graph nodes.")
 except Exception as e:
-    logger.error(f"Failed to initialize graph immediately: {e}")
+    logger.error(f"Failed to initialise graph: {e}")
     pyg_data = None
     node_mapping = {}
     reverse_node_mapping = {}
+
 
 # Load the trained ST-GNN Model from weights
 stgnn_model = None
@@ -152,3 +173,15 @@ async def get_forecast(
         horizon_minutes=horizon_minutes,
         nodes=response_nodes
     )
+
+
+@router.get("/graph-nodes")
+async def get_graph_nodes(limit: int = Query(30, description="Max nodes to return for visualisation")):
+    """
+    Returns a subset of the road-network graph nodes with their canvas-mapped
+    positions (top/left as percentage of the visualisation area, derived from
+    real OSM lat/lon).  The live telemetry view calls this once on load to get
+    stable, topology-correct node positions rather than random scattering.
+    """
+    subset = _canvas_nodes[:limit]
+    return {"nodes": subset, "total": len(_canvas_nodes)}
