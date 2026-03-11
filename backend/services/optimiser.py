@@ -17,7 +17,7 @@ class DepartureOptimiser:
     def __init__(self, step_minutes=5):
         self.step_minutes = step_minutes
 
-    async def compute_pareto_frontier(self, origin: str, destination: str, deadline: float, hours: int = 24, user_preferences: dict = None) -> List[DepartureOption]:
+    async def compute_pareto_frontier(self, origin: str, destination: str, deadline: float, hours: int = 24, user_preferences: dict | None = None) -> List[DepartureOption]:
         """
         Evaluate departure times across a 24-hour horizon.
         Return non-dominated options (Pareto optimal) trading off expected travel time, 
@@ -93,7 +93,7 @@ class DepartureOptimiser:
                 })
 
         # Filter for Personalised Pareto optimality
-        pareto_frontier = []
+        pareto_frontier: List[DepartureOption] = []
         for x in candidates:
             dominated = False
             for y in candidates:

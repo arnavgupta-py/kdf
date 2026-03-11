@@ -13,6 +13,7 @@ class OptimizationRequest(BaseModel):
     destination: str = Field(..., description="Destination node ID or address")
     deadline: float = Field(..., description="Unix timestamp for the hard arrival deadline")
     planning_horizon_hours: int = Field(24, description="Planning horizon in hours")
+    user_id: Optional[str] = Field(None, description="Optional User ID to load personal routing behaviour weights")
 
 class OptimizationResponse(BaseModel):
     options: List[DepartureOption] = Field(..., description="Pareto frontier of departure candidates")

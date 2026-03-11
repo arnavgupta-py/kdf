@@ -1,7 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from backend.db.sqlite import get_db
 from backend.schemas.optimization import OptimizationRequest, OptimizationResponse, ParkingRequest, ParkingResponse
 from backend.services.optimiser import DepartureOptimiser
 from backend.services.parking import ParkingIntelligence
+from backend.services.user_service import infer_user_preferences
 from loguru import logger
 import time
 
@@ -11,7 +14,7 @@ optimiser_service = DepartureOptimiser(step_minutes=5)
 parking_service = ParkingIntelligence()
 
 @router.post("/departure-optimiser", response_model=OptimizationResponse)
-async def get_departure_frontier(request: OptimizationRequest):
+async def get_departure_frontier(request: OptimizationRequest, db: Session = Depends(get_db)):
     """
     Computes a Pareto frontier array of departure options reflecting the optimal 
     trade-off between expected travel time and hard-arrival probability.
@@ -20,11 +23,19 @@ async def get_departure_frontier(request: OptimizationRequest):
         raise HTTPException(status_code=400, detail="Departure deadline must be in the future.")
         
     try:
+        user_prefs = None
+        if request.user_id:
+            try:
+                user_prefs = infer_user_preferences(db, request.user_id)
+            except Exception as e:
+                logger.warning(f"Could not load preferences for user {request.user_id}: {e}")
+
         options = await optimiser_service.compute_pareto_frontier(
             origin=request.origin,
             destination=request.destination,
             deadline=request.deadline,
-            hours=request.planning_horizon_hours
+            hours=request.planning_horizon_hours,
+            user_preferences=user_prefs
         )
         return OptimizationResponse(options=options)
     except Exception as e:
