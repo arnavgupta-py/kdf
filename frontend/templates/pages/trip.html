@@ -1,163 +1,368 @@
 <div class="h-full flex flex-col md:flex-row gap-6 animate-[fadeIn_0.5s_ease-out]">
     <!-- Form Panel -->
-    <div class="w-full md:w-[450px] flex-shrink-0 glass-panel p-8 rounded-3xl border border-surface/50 h-max max-h-full overflow-y-auto z-20 shadow-[-10px_0_50px_rgba(0,0,0,0.5)] relative flex flex-col">
-        <!-- Accent Line -->
-        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cronos-accent to-purple-500 rounded-t-3xl"></div>
-        
-        <h2 class="text-3xl font-extrabold text-white mb-2 glow-text">Plan Journey</h2>
-        <p class="text-cronos-muted text-sm mb-8 font-medium">Causal Engine Stochastic Optimisation</p>
-        
-        <form x-data="{ mode: 'fastest', processing: false }" 
-              @submit="processing = true" 
-              @htmx:after-request="
-                  processing = false;
-                  if($event.detail.successful) {
-                      $dispatch('notify', {msg: 'Optimization Complete. Rendering Pareto Frontier.', type: 'success'});
-                      $dispatch('render-options', JSON.parse($event.detail.xhr.response).options);
-                  } else {
-                      $dispatch('notify', {msg: 'Optimization Failed.', type: 'error'});
-                  }
-              "
-              hx-post="/api/v1/scheduler/departure-optimiser" 
-              hx-ext="json-enc"
-              hx-swap="none"
-              hx-vals="js:{deadline: Math.floor(Date.now() / 1000) + 3600 * 5, planning_horizon_hours: 12}"
-              hx-indicator="#loading"
-              class="flex flex-col gap-5">
-            
-            <div class="relative group">
-                <label class="block text-xs font-bold text-cronos-muted uppercase tracking-wider mb-2 group-focus-within:text-cronos-accent transition-colors">Origin</label>
-                <div class="flex items-center bg-backdrop/50 border border-surface rounded-xl overflow-hidden focus-within:border-cronos-accent/50 focus-within:shadow-[0_0_15px_rgba(56,189,248,0.2)] transition-all">
-                    <div class="pl-4 text-emerald-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+    <div class="w-full md:w-[440px] flex-shrink-0 glass-panel rounded-3xl border border-surface/50 relative flex flex-col overflow-hidden shadow-[-10px_0_50px_rgba(0,0,0,0.5)]">
+        <!-- Accent gradient cap -->
+        <div class="h-1 w-full bg-gradient-to-r from-cronos-accent to-purple-500 flex-shrink-0"></div>
+
+        <div class="flex-1 overflow-y-auto p-8">
+            <h2 class="text-3xl font-extrabold text-white mb-1 glow-text">Plan Journey</h2>
+            <p class="text-cronos-muted text-sm mb-8 font-medium">Causal Engine · Stochastic Pareto Optimisation</p>
+
+            <form id="trip-form"
+                  x-data="{
+                      mode: 'fastest',
+                      processing: false,
+                      zoneType: 'commercial',
+                      destination_val: 'Lower Parel, Mumbai',
+                      originVal: 'Bandra West, Mumbai',
+                  }"
+                  @submit.prevent="
+                      processing = true;
+                      const fd = new FormData($el);
+                      const deadline = Math.floor(Date.now() / 1000) + 3600 * 5;
+                      const body = {
+                          origin: fd.get('origin'),
+                          destination: fd.get('destination'),
+                          deadline: deadline,
+                          planning_horizon_hours: 12
+                      };
+                      const dest = fd.get('destination');
+                      const ztype = zoneType;
+                      const arrivalTs = deadline - 15*60;
+
+                      fetch('/api/v1/scheduler/departure-optimiser', {
+                          method: 'POST',
+                          headers: {'Content-Type': 'application/json'},
+                          body: JSON.stringify(body)
+                      })
+                      .then(r => r.json())
+                      .then(data => {
+                          $dispatch('render-options', { options: data.options, mode: mode });
+                          $dispatch('notify', {msg: 'Pareto Frontier computed. Fetching parking…', type: 'success'});
+                          return fetch('/api/v1/scheduler/parking-intel', {
+                              method: 'POST',
+                              headers: {'Content-Type': 'application/json'},
+                              body: JSON.stringify({ destination: dest, arrival_time: arrivalTs, zone_type: ztype })
+                          });
+                      })
+                      .then(r => r.json())
+                      .then(parking => {
+                          $dispatch('render-parking', parking);
+                      })
+                      .catch(err => {
+                          $dispatch('notify', {msg: 'Request failed: ' + err.message, type: 'error'});
+                      })
+                      .finally(() => { processing = false; });
+                  "
+                  class="flex flex-col gap-5">
+
+                <!-- Origin -->
+                <div class="relative group">
+                    <label class="block text-xs font-bold text-cronos-muted uppercase tracking-wider mb-2 group-focus-within:text-cronos-accent transition-colors">Origin</label>
+                    <div class="flex items-center bg-backdrop/50 border border-surface rounded-xl overflow-hidden focus-within:border-cronos-accent/50 focus-within:shadow-[0_0_15px_rgba(56,189,248,0.2)] transition-all">
+                        <div class="pl-4 text-emerald-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v2m0 16v2M2 12h2m16 0h2"/></svg>
+                        </div>
+                        <input type="text" name="origin" x-model="originVal" placeholder="Current Location" value="Bandra West, Mumbai"
+                               class="w-full bg-transparent border-none text-white py-3 px-3 outline-none font-medium placeholder-cronos-muted/40" required>
                     </div>
-                    <input type="text" name="origin" placeholder="Current Location" value="Bandra West, Mumbai" class="w-full bg-transparent border-none text-white py-3 px-3 outline-none font-medium placeholder-surface/40" required>
                 </div>
-            </div>
 
-            <div class="relative group">
-                <label class="block text-xs font-bold text-cronos-muted uppercase tracking-wider mb-2 group-focus-within:text-purple-400 transition-colors">Destination</label>
-                <div class="flex items-center bg-backdrop/50 border border-surface rounded-xl overflow-hidden focus-within:border-purple-400/50 focus-within:shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all">
-                    <div class="pl-4 text-rose-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <!-- Destination -->
+                <div class="relative group">
+                    <label class="block text-xs font-bold text-cronos-muted uppercase tracking-wider mb-2 group-focus-within:text-purple-400 transition-colors">Destination</label>
+                    <div class="flex items-center bg-backdrop/50 border border-surface rounded-xl overflow-hidden focus-within:border-purple-400/50 focus-within:shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all">
+                        <div class="pl-4 text-rose-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        </div>
+                        <input type="text" name="destination" x-model="destination_val" placeholder="Search address…" value="Lower Parel, Mumbai"
+                               class="w-full bg-transparent border-none text-white py-3 px-3 outline-none font-medium placeholder-cronos-muted/40" required>
                     </div>
-                    <input type="text" name="destination" placeholder="Search address..." value="Lower Parel, Mumbai" class="w-full bg-transparent border-none text-white py-3 px-3 outline-none font-medium placeholder-surface/40" required>
                 </div>
-            </div>
 
-            <div class="pt-2">
-                <label class="block text-xs font-bold text-cronos-muted uppercase tracking-wider mb-3">Goal Heuristic</label>
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="hidden" name="mode" :value="mode">
-                    <button type="button" @click="mode = 'fastest'" 
-                            class="py-3 px-4 rounded-xl text-sm font-semibold transition-all border outline-none"
-                            :class="mode === 'fastest' ? 'bg-cronos-accent/10 border-cronos-accent text-cronos-accent shadow-[0_0_15px_rgba(56,189,248,0.2)]' : 'bg-backdrop/30 border-surface text-cronos-muted hover:text-white'">
-                        ⚡ Time
-                    </button>
-                    <button type="button" @click="mode = 'reliable'" 
-                            class="py-3 px-4 rounded-xl text-sm font-semibold transition-all border outline-none"
-                            :class="mode === 'reliable' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-backdrop/30 border-surface text-cronos-muted hover:text-white'">
-                        🛡️ Reliability
-                    </button>
+                <!-- Goal Heuristic -->
+                <div class="pt-1">
+                    <label class="block text-xs font-bold text-cronos-muted uppercase tracking-wider mb-3">Goal Heuristic</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" @click="mode = 'fastest'"
+                                class="py-3 px-4 rounded-xl text-sm font-semibold transition-all border outline-none"
+                                :class="mode === 'fastest' ? 'bg-cronos-accent/10 border-cronos-accent text-cronos-accent shadow-[0_0_15px_rgba(56,189,248,0.2)]' : 'bg-backdrop/30 border-surface text-cronos-muted hover:text-white'">
+                            ⚡ Time
+                        </button>
+                        <button type="button" @click="mode = 'reliable'"
+                                class="py-3 px-4 rounded-xl text-sm font-semibold transition-all border outline-none"
+                                :class="mode === 'reliable' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-backdrop/30 border-surface text-cronos-muted hover:text-white'">
+                            🛡️ Reliability
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Generate Button -->
-            <button type="submit" class="mt-4 w-full bg-gradient-to-r from-cronos-glow to-purple-600 hover:from-cronos-accent hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(2,132,199,0.5)] hover:shadow-[0_0_30px_rgba(2,132,199,0.7)] transition-all flex justify-center items-center gap-3 relative overflow-hidden group">
-                <div class="absolute inset-0 w-full h-full bg-white/20 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
-                <span x-show="!processing">Compute Pareto Frontier</span>
-                <span x-show="processing" class="flex items-center gap-2">
-                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    Solving Causal Interventions...
-                </span>
-            </button>
-        </form>
+                <!-- Parking Zone Type -->
+                <div class="pt-1">
+                    <label class="block text-xs font-bold text-cronos-muted uppercase tracking-wider mb-3">Destination Zone</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <template x-for="zone in ['commercial', 'residential', 'transit']">
+                            <button type="button" @click="zoneType = zone"
+                                    class="py-2.5 px-3 rounded-xl text-xs font-semibold transition-all border outline-none capitalize"
+                                    :class="zoneType === zone ? 'bg-purple-500/15 border-purple-500 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.25)]'
+                                                               : 'bg-backdrop/30 border-surface text-cronos-muted hover:text-white'">
+                                <span x-text="zone"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit"
+                        class="mt-4 w-full bg-gradient-to-r from-cronos-glow to-purple-600 hover:from-cronos-accent hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(2,132,199,0.5)] hover:shadow-[0_0_30px_rgba(2,132,199,0.7)] transition-all flex justify-center items-center gap-3 relative overflow-hidden group disabled:opacity-60"
+                        :disabled="processing">
+                    <div class="absolute inset-0 w-full h-full bg-white/10 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out skew-x-[-20deg]"></div>
+                    <span x-show="!processing">Compute Pareto Frontier</span>
+                    <span x-show="processing" class="flex items-center gap-2">
+                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Solving Causal Interventions…
+                    </span>
+                </button>
+            </form>
+        </div>
     </div>
 
-    <!-- Right Map Placeholder -->
-    <div x-data="{ options: null }"
-         @render-options.window="options = $event.detail"
-         class="flex-1 glass-panel rounded-3xl border border-surface/50 relative overflow-hidden flex flex-col p-6 min-h-[400px] htmx-result-pane">
-        
-        <!-- Network Map Background -->
-        <div class="absolute inset-0 z-0" style="background-image: linear-gradient(rgba(56, 189, 248, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(56, 189, 248, 0.1) 1px, transparent 1px); background-size: 50px 50px; transform: perspective(500px) rotateX(60deg) scale(2.5) translateY(-50px);">
-        </div>
+    <!-- Right results pane -->
+    <div class="flex-1 flex flex-col gap-4 overflow-y-auto min-h-[400px]"
+         x-data="{
+             options: null,
+             parking: null,
+             fmtTime(ts) {
+                 const d = new Date(ts * 1000);
+                 return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+             },
+             fmtDate(ts) {
+                 const d = new Date(ts * 1000);
+                 const today = new Date();
+                 if (d.toDateString() === today.toDateString()) return 'Today';
+                 const tom = new Date(today); tom.setDate(today.getDate()+1);
+                 if (d.toDateString() === tom.toDateString()) return 'Tomorrow';
+                 return d.toLocaleDateString('en-IN', {weekday: 'short', month: 'short', day: 'numeric'});
+             },
+             countdown(ts) {
+                 const diffSec = ts - Date.now() / 1000;
+                 if (diffSec < 0) return 'Now';
+                 const h = Math.floor(diffSec / 3600);
+                 const m = Math.floor((diffSec % 3600) / 60);
+                 if (h > 0) return `in ${h}h ${m}m`;
+                 return `in ${m}m`;
+             },
+             routeLabel(rid) {
+                 return rid && rid.includes('fastest') ? '⚡ Fastest' : '🛡️ Alternative';
+             },
+             probColor(p) {
+                 if (p >= 0.85) return 'text-emerald-400';
+                 if (p >= 0.65) return 'text-amber-400';
+                 return 'text-rose-400';
+             },
+             occupancyColor(p) {
+                 if (p <= 0.4) return 'text-emerald-400';
+                 if (p <= 0.75) return 'text-amber-400';
+                 return 'text-rose-400';
+             },
+             occupancyLabel(p) {
+                 if (p <= 0.4) return 'Available';
+                 if (p <= 0.75) return 'Moderate';
+                 return 'Near Full';
+             },
+             occupancyBarColor(p) {
+                 if (p <= 0.4)  return 'from-emerald-600 to-emerald-400';
+                 if (p <= 0.75) return 'from-amber-600 to-amber-400';
+                 return 'from-rose-600 to-rose-400';
+             }
+         }"
+         @render-options.window="options = $event.detail.options"
+         @render-parking.window="parking = $event.detail">
 
+        <!-- ─── Awaiting state ─────────────────────────────────────── -->
         <template x-if="options === null">
-            <!-- original awaiting state -->
-            <div class="relative z-10 m-auto text-center max-w-sm">
-                 <div class="w-20 h-20 bg-backdrop border border-surface rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl relative">
-                    <span class="absolute inline-flex h-full w-full rounded-full bg-cronos-accent opacity-20 animate-ping"></span>
-                    <svg class="w-10 h-10 text-cronos-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
-                 </div>
-                 <p class="text-xl font-bold text-white mb-2 tracking-wide glow-text">Awaiting Journey Context</p>
-                 <p class="text-cronos-muted text-sm leading-relaxed">Enter your origin and destination to generate causal stochastic routes. The system will leverage historical perturbations to navigate complex urban grids.</p>
+            <div class="flex-1 glass-panel rounded-3xl border border-surface/50 relative overflow-hidden flex items-center justify-center min-h-[400px]">
+                <!-- Perspective grid -->
+                <div class="absolute inset-0 z-0" style="background-image: linear-gradient(rgba(56,189,248,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.07) 1px, transparent 1px); background-size: 50px 50px; transform: perspective(500px) rotateX(60deg) scale(2.5) translateY(-50px);"></div>
+                <div class="relative z-10 text-center max-w-sm animate-[fadeIn_0.5s_ease-out]">
+                    <div class="w-20 h-20 bg-backdrop border border-surface rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl relative">
+                        <span class="absolute inline-flex h-full w-full rounded-full bg-cronos-accent opacity-20 animate-ping"></span>
+                        <svg class="w-10 h-10 text-cronos-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                    </div>
+                    <p class="text-xl font-bold text-white mb-2 tracking-wide glow-text">Awaiting Journey Context</p>
+                    <p class="text-cronos-muted text-sm leading-relaxed">Enter your origin and destination to generate causal stochastic routes. The engine will model Mumbai's urban graph and parking availability simultaneously.</p>
+                </div>
             </div>
         </template>
-        
+
+        <!-- ─── Results state ─────────────────────────────────────── -->
         <template x-if="options !== null">
-            <!-- results feed -->
-            <div class="relative z-10 w-full h-full flex flex-col animate-[fadeIn_0.5s_ease-out]">
-                <div class="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-cronos-accent rounded-t-3xl"></div>
-                
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                        <h3 class="text-xl font-bold text-white tracking-wide glow-text">Stochastic Pareto Frontier</h3>
-                        <p class="text-xs text-cronos-muted uppercase tracking-widest mt-1">Found <span x-text="options.length"></span> Non-Dominated Departures</p>
-                    </div>
-                    <div class="bg-surface/50 px-3 py-1.5 rounded-xl border border-surface flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span class="text-[10px] font-bold text-emerald-400 tracking-wider">LIVE COMPUTATION</span>
+            <div class="flex flex-col gap-4 animate-[fadeIn_0.5s_ease-out] w-full">
+
+                <!-- Pareto Frontier panel -->
+                <div class="glass-panel rounded-3xl border border-surface/50 relative overflow-hidden">
+                    <div class="h-1 w-full bg-gradient-to-r from-emerald-500 to-cronos-accent"></div>
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-5">
+                            <div>
+                                <h3 class="text-xl font-bold text-white tracking-wide glow-text">Stochastic Pareto Frontier</h3>
+                                <p class="text-xs text-cronos-muted uppercase tracking-widest mt-0.5">
+                                    <span x-text="options.length"></span> Non-Dominated Departures
+                                </p>
+                            </div>
+                            <div class="bg-surface/50 px-3 py-1.5 rounded-xl border border-surface flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span class="text-[10px] font-bold text-emerald-400 tracking-wider">LIVE COMPUTATION</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                            <template x-for="(option, idx) in options.slice(0, 8)" :key="idx">
+                                <div class="bg-backdrop/50 border border-surface/50 rounded-2xl p-4 hover:border-cronos-accent/40 hover:bg-backdrop/70 hover:shadow-[0_0_20px_rgba(56,189,248,0.08)] transition-all cursor-pointer group">
+
+                                    <div class="flex items-start justify-between gap-3">
+                                        <!-- Left: time info -->
+                                        <div class="flex items-center gap-3 min-w-0">
+                                            <!-- Route type badge -->
+                                            <div class="w-10 h-10 rounded-xl bg-surface flex items-center justify-center shrink-0 text-cronos-muted group-hover:text-cronos-accent group-hover:bg-cronos-accent/10 transition-colors">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <!-- Primary label: human-readable time -->
+                                                <div class="flex items-baseline gap-2 flex-wrap">
+                                                    <span class="text-white font-bold text-lg leading-tight" x-text="fmtTime(option.departure_time)"></span>
+                                                    <span class="text-xs text-cronos-muted font-medium" x-text="fmtDate(option.departure_time)"></span>
+                                                </div>
+                                                <!-- Countdown + route label row -->
+                                                <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                    <span class="text-[11px] font-semibold text-cronos-accent tracking-wide" x-text="countdown(option.departure_time)"></span>
+                                                    <span class="text-cronos-muted/50 text-xs">·</span>
+                                                    <span class="text-[11px] font-semibold text-cronos-muted" x-text="routeLabel(option.route_id)"></span>
+                                                    <span class="text-cronos-muted/50 text-xs">·</span>
+                                                    <span class="text-[11px] text-cronos-muted">
+                                                        ~<span x-text="parseFloat(option.expected_travel_time).toFixed(0)"></span> min
+                                                        <span class="opacity-60">± <span x-text="Math.sqrt(option.travel_time_variance).toFixed(1)"></span>σ</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Right: probability -->
+                                        <div class="text-right shrink-0">
+                                            <div class="text-2xl font-black leading-none" :class="probColor(option.arrival_probability)" x-text="(option.arrival_probability * 100).toFixed(0) + '%'"></div>
+                                            <div class="text-[9px] text-cronos-muted uppercase tracking-widest font-bold mt-0.5">On time</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Probability bar -->
+                                    <div class="w-full bg-surface/60 h-1.5 rounded-full overflow-hidden mt-3">
+                                        <div class="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-700"
+                                             :style="`width: ${Math.floor(option.arrival_probability * 100)}%`"></div>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <template x-if="options.length === 0">
+                                <div class="text-center p-8 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-400 font-medium">
+                                    <svg class="w-8 h-8 mx-auto mb-2 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                    No routes satisfying the strict deadline constraint.
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </div>
 
-                <div class="space-y-4 overflow-y-auto flex-1 pr-2">
-                    <template x-for="option in options.slice(0, 7)">
-                        <div class="bg-backdrop/40 border border-surface/50 rounded-2xl p-4 hover:border-cronos-accent/30 hover:shadow-[0_0_15px_rgba(56,189,248,0.1)] transition-all cursor-pointer group mb-4">
-                            
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-xl bg-surface flex items-center justify-center text-cronos-muted group-hover:text-cronos-accent group-hover:bg-cronos-accent/10 transition-colors shrink-0">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    </div>
-                                    <div>
-                                        <div class="text-white flex items-center gap-2 font-bold tracking-wide">
-                                            <span>Expected:</span> <span x-text="parseFloat(option.expected_travel_time).toFixed(0)"></span> <span>mins</span>
-                                        </div>
-                                        <div class="text-xs text-cronos-muted flex items-center gap-1">
-                                            <span>Depart @</span> <span x-text="Math.floor(option.departure_time)"></span> <span>Unix</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="text-right shrink-0">
-                                    <div class="text-xl font-black" :class="option.arrival_probability > 0.8 ? 'text-emerald-400' : 'text-amber-400'">
-                                        <span x-text="(option.arrival_probability * 100).toFixed(1)"></span>%
-                                    </div>
-                                    <div class="text-[10px] text-cronos-muted uppercase tracking-widest font-bold">Arrival Probability</div>
-                                </div>
+                <!-- Parking Intelligence panel -->
+                <div class="glass-panel rounded-3xl border border-surface/50 relative overflow-hidden">
+                    <div class="h-1 w-full bg-gradient-to-r from-purple-500 to-indigo-500"></div>
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-5">
+                            <div>
+                                <h3 class="text-xl font-bold text-white tracking-wide">Parking Intelligence</h3>
+                                <p class="text-xs text-cronos-muted uppercase tracking-widest mt-0.5">Probabilistic Occupancy · Land-Use Model</p>
                             </div>
+                            <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V9h4a2 2 0 010 4H9"/>
+                            </svg>
+                        </div>
 
-                            <!-- Visual Bar representing probability confidence -->
-                            <div class="w-full bg-surface/50 h-1.5 rounded-full overflow-hidden flex">
-                                <div class="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full" :style="`width: ${Math.floor(option.arrival_probability * 100)}%`"></div>
+                        <!-- Awaiting parking data -->
+                        <template x-if="parking === null">
+                            <div class="text-center py-8 text-cronos-muted text-sm">
+                                <svg class="w-8 h-8 mx-auto mb-2 opacity-40 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/></svg>
+                                Parking data will appear after route computation…
                             </div>
-                            
-                            <div class="mt-3 flex items-center gap-2 text-xs font-semibold text-cronos-muted">
-                                <svg class="w-4 h-4 text-purple-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                                <span>Variance: ± <span x-text="parseFloat(option.travel_time_variance).toFixed(1)"></span> mins²</span>
-                                <span class="mx-2 opacity-30">|</span>
-                                <span x-text="option.route_id"></span>
+                        </template>
+
+                        <template x-if="parking !== null">
+                            <div class="flex flex-col gap-4 animate-[fadeIn_0.4s_ease-out]">
+                                <!-- Primary occupancy gauge -->
+                                <div class="bg-backdrop/50 border border-surface/50 rounded-2xl p-5">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="text-sm font-semibold text-cronos-muted uppercase tracking-wider">Destination Occupancy</span>
+                                        <span class="text-2xl font-black" :class="occupancyColor(parking.primary_occupancy_probability)"
+                                              x-text="(parking.primary_occupancy_probability * 100).toFixed(0) + '%'"></span>
+                                    </div>
+                                    <div class="w-full bg-surface/60 h-2.5 rounded-full overflow-hidden">
+                                        <div class="h-full rounded-full bg-gradient-to-r transition-all duration-700"
+                                             :class="occupancyBarColor(parking.primary_occupancy_probability)"
+                                             :style="`width: ${Math.floor(parking.primary_occupancy_probability * 100)}%`"></div>
+                                    </div>
+                                    <div class="flex items-center justify-between mt-2">
+                                        <span class="text-xs text-cronos-muted">Empty</span>
+                                        <span class="text-xs font-bold" :class="occupancyColor(parking.primary_occupancy_probability)"
+                                              x-text="occupancyLabel(parking.primary_occupancy_probability)"></span>
+                                        <span class="text-xs text-cronos-muted">Full</span>
+                                    </div>
+                                </div>
+
+                                <!-- Alternatives (shown only if primary is busy) -->
+                                <template x-if="parking.alternatives && parking.alternatives.length > 0">
+                                    <div>
+                                        <p class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            High occupancy — alternatives nearby
+                                        </p>
+                                        <div class="space-y-2">
+                                            <template x-for="(alt, i) in parking.alternatives" :key="i">
+                                                <div class="flex items-center justify-between bg-backdrop/40 border border-surface/50 rounded-xl p-3 hover:border-purple-500/30 transition-all">
+                                                    <div>
+                                                        <div class="text-sm font-semibold text-white capitalize" x-text="alt.location_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())"></div>
+                                                        <div class="text-xs text-cronos-muted mt-0.5">
+                                                            <span x-text="(alt.walking_distance_meters).toFixed(0)"></span>m walk
+                                                            <template x-if="alt.cost > 0">
+                                                                <span> · ₹<span x-text="alt.cost.toFixed(0)"></span>/hr</span>
+                                                            </template>
+                                                            <template x-if="alt.cost === 0">
+                                                                <span class="text-emerald-400 font-semibold"> · Free</span>
+                                                            </template>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-right">
+                                                        <div class="text-base font-bold" :class="occupancyColor(alt.occupancy_probability)"
+                                                             x-text="(alt.occupancy_probability * 100).toFixed(0) + '%'"></div>
+                                                        <div class="text-[9px] text-cronos-muted uppercase tracking-wide">occupied</div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <template x-if="!parking.alternatives || parking.alternatives.length === 0">
+                                    <div class="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
+                                        <svg class="w-6 h-6 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <p class="text-sm font-semibold text-emerald-300">Primary parking likely available at arrival — no alternatives needed.</p>
+                                    </div>
+                                </template>
                             </div>
-                        </div>
-                    </template>
-                    
-                    <template x-if="options.length === 0">
-                        <div class="text-center p-8 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-400 font-medium">
-                            <svg class="w-8 h-8 mx-auto mb-2 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                            No routes satisfying the strict deadline constraint!
-                        </div>
-                    </template>
+                        </template>
+
+                    </div>
                 </div>
             </div>
         </template>
@@ -167,9 +372,6 @@
 <style>
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-@keyframes shimmer {
-    100% { transform: translateX(100%); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 </style>
