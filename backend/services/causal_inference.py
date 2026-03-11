@@ -111,11 +111,10 @@ class CausalInferenceEngine:
             logger.error(f"Causal inference estimation failed: {e}")
             return None
 
-    def get_mocked_causal_factors(self, congestion_severity: float) -> list:
+    def get_causal_factors(self, congestion_severity: float) -> list:
         """
         Dynamically applies the mathematically verified causal mechanisms 
         extracted from the DoWhy Model against the current predicted real-time congestion state.
-        (Retains method name for API compatibility, but returns true estimates.)
         """
         factors = []
         

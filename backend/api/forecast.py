@@ -136,7 +136,7 @@ async def get_forecast(
         upper_bound = min(1.0, mu + 1.96 * sigma)
 
         # Retrieve causal insights
-        raw_factors = causal_engine.get_mocked_causal_factors(mu)
+        raw_factors = causal_engine.get_causal_factors(mu)
         schema_factors = [CausalFactor(**factor) for factor in raw_factors]
 
         response_node = ForecastNode(
