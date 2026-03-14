@@ -139,7 +139,30 @@
            options: null,
            parking: null,
            activeRouteId: null,
-            /* Time display: served as pre-formatted IST strings from Python backend */
+           formatLocalTime(unixTs) {
+               return new Date(unixTs * 1000).toLocaleTimeString([], {
+                   hour: '2-digit',
+                   minute: '2-digit',
+                   hour12: true
+               });
+           },
+           formatLocalDate(unixTs) {
+               const value = new Date(unixTs * 1000);
+               const now = new Date();
+               const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+               const tomorrow = new Date(today);
+               tomorrow.setDate(today.getDate() + 1);
+               const target = new Date(value.getFullYear(), value.getMonth(), value.getDate());
+
+               if (target.getTime() === today.getTime()) return 'Today';
+               if (target.getTime() === tomorrow.getTime()) return 'Tomorrow';
+
+               return value.toLocaleDateString([], {
+                   weekday: 'short',
+                   month: 'short',
+                   day: 'numeric'
+               });
+           },
            routeLabel(rid) {
                return rid && rid.includes('fastest') ? '⚡ Fastest' : '🛡️ Alternative';
            },
@@ -241,10 +264,10 @@
                                               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                           </div>
                                           <div class="min-w-0">
-                                              <!-- Primary label: human-readable IST time (formatted server-side) -->
+                                              <!-- Primary label: browser-local time derived from the Unix timestamp -->
                                               <div class="flex items-baseline gap-2 flex-wrap">
-                                                  <span class="text-white font-bold text-lg leading-tight" x-text="option.departure_time_ist"></span>
-                                                  <span class="text-xs text-cronos-muted font-medium" x-text="option.departure_date_ist"></span>
+                                                  <span class="text-white font-bold text-lg leading-tight" x-text="formatLocalTime(option.departure_time)"></span>
+                                                  <span class="text-xs text-cronos-muted font-medium" x-text="formatLocalDate(option.departure_time)"></span>
                                               </div>
                                               <!-- Countdown + route label row -->
                                               <div class="flex items-center gap-2 mt-0.5 flex-wrap">

@@ -24,15 +24,9 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </div>
                     <div>
-                        {# Add 19800 seconds (5.5 hours) for IST Mumbai Time #}
-                        {% set dep_mins = (((option.departure_time + 19800) % 86400) // 60) | int %}
-                        {% set dep_hh = (dep_mins // 60) % 24 %}
-                        {% set dep_mm = dep_mins % 60 %}
-                        {% set ampm = 'AM' if dep_hh < 12 else 'PM' %}
-                        {% set dep_hh12 = dep_hh if dep_hh <= 12 else dep_hh - 12 %}
-                        {% set dep_hh12 = 12 if dep_hh12 == 0 else dep_hh12 %}
-                        <div class="text-white font-bold text-lg leading-tight">
-                            {{ "%02d:%02d" | format(dep_hh12, dep_mm) }} {{ ampm }}
+                        <div class="text-white font-bold text-lg leading-tight js-local-time"
+                             data-unix-ts="{{ option.departure_time }}">
+                            --
                         </div>
                         <div class="text-xs text-cronos-muted mt-0.5">
                             ~{{ "%.0f" | format(option.expected_travel_time) }} min &nbsp;·&nbsp;
@@ -78,3 +72,19 @@
     to   { opacity: 1; transform: translateY(0); }
 }
 </style>
+
+<script>
+(() => {
+    const formatLocalTime = (unixTs) => new Date(unixTs * 1000).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    document.querySelectorAll('.js-local-time[data-unix-ts]').forEach((node) => {
+        const unixTs = Number(node.dataset.unixTs);
+        if (!Number.isFinite(unixTs)) return;
+        node.textContent = formatLocalTime(unixTs);
+    });
+})();
+</script>
