@@ -8,7 +8,10 @@ templates = Jinja2Templates(directory="frontend/templates")
 @router.get("/trip", response_class=HTMLResponse)
 async def trip_planner_view(request: Request):
     """Returns the partial HTML for the Trip Planner."""
-    return templates.TemplateResponse("pages/trip.html", {"request": request})
+    response = templates.TemplateResponse("pages/trip_v2.html", {"request": request})
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    return response
 
 @router.get("/live", response_class=HTMLResponse)
 async def live_telemetry_view(request: Request):

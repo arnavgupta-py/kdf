@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, DateTime, Float, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from backend.db.sqlite import Base
@@ -26,6 +26,6 @@ class Journey(Base):
     predicted_arrival_time = Column(DateTime)
     actual_arrival_time = Column(DateTime)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", backref="journeys")

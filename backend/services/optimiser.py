@@ -137,8 +137,14 @@ class DepartureOptimiser:
 
         candidates: list[dict] = []
 
+        import time as _time
+        current_time = _time.time()
         for i in range(total_steps):
             depart_ts = start_search_ts + (i * self.step_minutes * 60)
+            
+            # Prevent time-travel: cannot depart in the past
+            if depart_ts < current_time:
+                continue
 
             tod_scale = _time_of_day_congestion_multiplier(depart_ts)
             congestion   = min(base_congestion * (0.6 + tod_scale * 0.8), 1.0)

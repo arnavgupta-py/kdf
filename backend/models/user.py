@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, DateTime, Float, Integer, Boolean, Text
 from backend.db.sqlite import Base
 
@@ -17,5 +17,5 @@ class User(Base):
     # e.g., {"toll_aversion": 0.8, "variance_tolerance": 0.2, "highway_preference": 0.6}
     preferences = Column(Text, default="{}")
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

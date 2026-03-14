@@ -139,26 +139,7 @@
            options: null,
            parking: null,
            activeRouteId: null,
-           fmtTime(ts) {
-               const d = new Date(ts * 1000);
-               return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-           },
-           fmtDate(ts) {
-               const d = new Date(ts * 1000);
-               const today = new Date();
-               if (d.toDateString() === today.toDateString()) return 'Today';
-               const tom = new Date(today); tom.setDate(today.getDate()+1);
-               if (d.toDateString() === tom.toDateString()) return 'Tomorrow';
-               return d.toLocaleDateString('en-IN', {weekday: 'short', month: 'short', day: 'numeric'});
-           },
-           countdown(ts) {
-               const diffSec = ts - Date.now() / 1000;
-               if (diffSec < 0) return 'Now';
-               const h = Math.floor(diffSec / 3600);
-               const m = Math.floor((diffSec % 3600) / 60);
-               if (h > 0) return `in ${h}h ${m}m`;
-               return `in ${m}m`;
-           },
+            /* Time display: served as pre-formatted IST strings from Python backend */
            routeLabel(rid) {
                return rid && rid.includes('fastest') ? '⚡ Fastest' : '🛡️ Alternative';
            },
@@ -260,14 +241,14 @@
                                               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                           </div>
                                           <div class="min-w-0">
-                                              <!-- Primary label: human-readable time -->
+                                              <!-- Primary label: human-readable IST time (formatted server-side) -->
                                               <div class="flex items-baseline gap-2 flex-wrap">
-                                                  <span class="text-white font-bold text-lg leading-tight" x-text="fmtTime(option.departure_time)"></span>
-                                                  <span class="text-xs text-cronos-muted font-medium" x-text="fmtDate(option.departure_time)"></span>
+                                                  <span class="text-white font-bold text-lg leading-tight" x-text="option.departure_time_ist"></span>
+                                                  <span class="text-xs text-cronos-muted font-medium" x-text="option.departure_date_ist"></span>
                                               </div>
                                               <!-- Countdown + route label row -->
                                               <div class="flex items-center gap-2 mt-0.5 flex-wrap">
-                                                  <span class="text-[11px] font-semibold text-cronos-accent tracking-wide" x-text="countdown(option.departure_time)"></span>
+                                                  <span class="text-[11px] font-semibold text-cronos-accent tracking-wide" x-text="option.countdown_ist"></span>
                                                   <span class="text-cronos-muted/50 text-xs">·</span>
                                                   <span class="text-[11px] font-semibold text-cronos-muted" x-text="routeLabel(option.route_id)"></span>
                                                   <span class="text-cronos-muted/50 text-xs">·</span>

@@ -26,9 +26,13 @@ def setup_logging():
 
     # Add stdout handler with structed JSON logging for production
     # and readable colorized logging for development.
+    import os
+    import time
+    os.environ['TZ'] = 'Asia/Kolkata'
+    time.tzset()
     logger.add(
         sys.stdout,
-        format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+        format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS Z}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
         level="INFO",
         colorize=True
     )

@@ -148,7 +148,8 @@ class ParkingIntelligence:
         gb = get_graph_builder()
         dest_lat, dest_lon = gb.geocode_place(destination)
 
-        time_hr = (arrival_time % 86400) / 3600
+        # Convert Unix timestamp to IST fractional hour (UTC+5:30 = +19800s)
+        time_hr = ((arrival_time + 19800) % 86400) / 3600
         primary_prob = self._compute_occupancy_prob(zone_type, time_hr)
 
         # Fetch real parking locations from OSM
