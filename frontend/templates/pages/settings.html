@@ -1,5 +1,5 @@
 <div class="h-full max-w-4xl mx-auto flex flex-col pt-8 animate-[fadeIn_0.5s_ease-out]">
-    
+
     <div class="mb-10 text-center lg:text-left">
         <h2 class="text-3xl font-extrabold text-white tracking-widest glow-text">Preferences</h2>
         <p class="text-cronos-muted mt-2">Personalize the internal Causal Engine heuristics.</p>
@@ -11,87 +11,119 @@
         ecoRouting: {{ 'true' if preferences.get('eco_routing', 0.0) >= 0.5 else 'false' }}, 
         highConf: {{ 'true' if preferences.get('high_confidence', 1.0) >= 0.5 else 'false' }} 
     }">
-        
+
         <!-- Toll Aversion toggle -->
-        <div class="glass-panel p-6 rounded-3xl border border-surface/50 hover:bg-surface_hover transition flex items-start gap-4 cursor-pointer group" @click="tollAversion = !tollAversion">
+        <div class="glass-panel p-6 rounded-3xl border border-surface/50 hover:bg-surface_hover transition flex items-start gap-4 cursor-pointer group"
+            @click="tollAversion = !tollAversion">
             <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg transition-colors border"
-                 :class="tollAversion ? 'bg-rose-500/20 text-rose-400 border-rose-500/50' : 'bg-surface border-surface/50 text-cronos-muted'">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                :class="tollAversion ? 'bg-rose-500/20 text-rose-400 border-rose-500/50' : 'bg-surface border-surface/50 text-cronos-muted'">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                </svg>
             </div>
-            
+
             <div class="flex-1">
                 <div class="flex items-center justify-between mb-1">
                     <h3 class="text-white font-bold group-hover:text-cronos-accent transition-colors">Toll Aversion</h3>
                     <!-- Alpine logic driving HTML toggle -->
-                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="toggle" id="toggle1" class="hidden" x-model="tollAversion"/>
+                    <div
+                        class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="toggle1" class="hidden" x-model="tollAversion" />
                         <div class="block w-10 h-6 rounded-full shadow-inner transition-colors"
-                             :class="tollAversion ? 'bg-rose-500' : 'bg-surface'"></div>
+                            :class="tollAversion ? 'bg-rose-500' : 'bg-surface'"></div>
                         <div class="dot absolute w-4 h-4 rounded-full transition-transform top-1 left-1 bg-white shadow"
-                             :class="tollAversion ? 'translate-x-4' : 'translate-x-0'"></div>
+                            :class="tollAversion ? 'translate-x-4' : 'translate-x-0'"></div>
                     </div>
                 </div>
-                <p class="text-sm text-cronos-muted leading-relaxed">Systemically avoids commercial toll bridges when exploring Pareto frontiers.</p>
+                <p class="text-sm text-cronos-muted leading-relaxed">Systemically avoids commercial toll bridges when
+                    exploring Pareto frontiers.</p>
             </div>
         </div>
 
         <!-- Eco Routing -->
-        <div class="glass-panel p-6 rounded-3xl border border-surface/50 hover:bg-surface_hover transition flex items-start gap-4 cursor-pointer group" @click="ecoRouting = !ecoRouting">
+        <div class="glass-panel p-6 rounded-3xl border border-surface/50 hover:bg-surface_hover transition flex items-start gap-4 cursor-pointer group"
+            @click="ecoRouting = !ecoRouting">
             <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg transition-colors border"
-                 :class="ecoRouting ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-surface border-surface/50 text-cronos-muted'">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                :class="ecoRouting ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-surface border-surface/50 text-cronos-muted'">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                </svg>
             </div>
-            
+
             <div class="flex-1">
                 <div class="flex items-center justify-between mb-1">
-                    <h3 class="text-white font-bold group-hover:text-cronos-accent transition-colors">Eco-first Navigation</h3>
-                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="toggle" class="hidden" x-model="ecoRouting"/>
+                    <h3 class="text-white font-bold group-hover:text-cronos-accent transition-colors">Eco-first
+                        Navigation</h3>
+                    <div
+                        class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" class="hidden" x-model="ecoRouting" />
                         <div class="block w-10 h-6 rounded-full shadow-inner transition-colors"
-                             :class="ecoRouting ? 'bg-emerald-500' : 'bg-surface'"></div>
+                            :class="ecoRouting ? 'bg-emerald-500' : 'bg-surface'"></div>
                         <div class="dot absolute w-4 h-4 rounded-full transition-transform top-1 left-1 bg-white shadow"
-                             :class="ecoRouting ? 'translate-x-4' : 'translate-x-0'"></div>
+                            :class="ecoRouting ? 'translate-x-4' : 'translate-x-0'"></div>
                     </div>
                 </div>
-                <p class="text-sm text-cronos-muted leading-relaxed">Prioritizes constant-speed corridors over shorter, start-stop urban segments to minimize emissions.</p>
+                <p class="text-sm text-cronos-muted leading-relaxed">Prioritizes constant-speed corridors over shorter,
+                    start-stop urban segments to minimize emissions.</p>
             </div>
         </div>
 
         <!-- High Confidence Modes -->
-        <div class="glass-panel p-6 rounded-3xl border border-surface/50 hover:bg-surface_hover transition flex items-start gap-4 cursor-pointer group" @click="highConf = !highConf">
+        <div class="glass-panel p-6 rounded-3xl border border-surface/50 hover:bg-surface_hover transition flex items-start gap-4 cursor-pointer group"
+            @click="highConf = !highConf">
             <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg transition-colors border"
-                 :class="highConf ? 'bg-purple-500/20 text-purple-400 border-purple-500/50' : 'bg-surface border-surface/50 text-cronos-muted'">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                :class="highConf ? 'bg-purple-500/20 text-purple-400 border-purple-500/50' : 'bg-surface border-surface/50 text-cronos-muted'">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+                    </path>
+                </svg>
             </div>
-            
+
             <div class="flex-1">
                 <div class="flex items-center justify-between mb-1">
-                    <h3 class="text-white font-bold group-hover:text-cronos-accent transition-colors">Strict Variance Clipping</h3>
-                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="toggle" class="hidden" x-model="highConf"/>
+                    <h3 class="text-white font-bold group-hover:text-cronos-accent transition-colors">Strict Variance
+                        Clipping</h3>
+                    <div
+                        class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" class="hidden" x-model="highConf" />
                         <div class="block w-10 h-6 rounded-full shadow-inner transition-colors"
-                             :class="highConf ? 'bg-purple-500' : 'bg-surface'"></div>
+                            :class="highConf ? 'bg-purple-500' : 'bg-surface'"></div>
                         <div class="dot absolute w-4 h-4 rounded-full transition-transform top-1 left-1 bg-white shadow"
-                             :class="highConf ? 'translate-x-4' : 'translate-x-0'"></div>
+                            :class="highConf ? 'translate-x-4' : 'translate-x-0'"></div>
                     </div>
                 </div>
-                <p class="text-sm text-cronos-muted leading-relaxed">Truncates the PyTorch Geometric probabilistic forecast tails to avoid high-risk, unproven shortcuts.</p>
+                <p class="text-sm text-cronos-muted leading-relaxed">Truncates the PyTorch Geometric probabilistic
+                    forecast tails to avoid high-risk, unproven shortcuts.</p>
             </div>
         </div>
 
         <!-- Placeholder card -->
-         <div class="glass-panel p-6 rounded-3xl border border-surface/50 flex flex-col items-center justify-center text-center opacity-50 relative overflow-hidden">
-             <div class="absolute inset-0 bg-surface/20" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px);"></div>
-             <svg class="w-8 h-8 text-cronos-muted mb-3 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-             <h3 class="text-xs font-bold text-cronos-muted uppercase tracking-widest relative z-10">More rules tuning in Phase 7...</h3>
-         </div>
+        <div
+            class="glass-panel p-6 rounded-3xl border border-surface/50 flex flex-col items-center justify-center text-center opacity-50 relative overflow-hidden">
+            <div class="absolute inset-0 bg-surface/20"
+                style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px);">
+            </div>
+            <svg class="w-8 h-8 text-cronos-muted mb-3 relative z-10" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4">
+                </path>
+            </svg>
+            <h3 class="text-xs font-bold text-cronos-muted uppercase tracking-widest relative z-10">More rules tuning in
+                future...</h3>
+        </div>
 
     </div>
 
     <div class="mt-8 flex justify-end" x-data="{ saving: false }">
-        <button class="bg-gradient-to-r from-cronos-glow to-purple-600 hover:from-cronos-accent hover:to-purple-500 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center gap-2 disabled:opacity-60 relative overflow-hidden group"
-                :disabled="saving"
-                @click="
+        <button
+            class="bg-gradient-to-r from-cronos-glow to-purple-600 hover:from-cronos-accent hover:to-purple-500 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center gap-2 disabled:opacity-60 relative overflow-hidden group"
+            :disabled="saving" @click="
                     saving = true;
                     fetch('/api/v1/users/me/preferences', {
                         method: 'PUT',
@@ -107,8 +139,13 @@
                     .catch(err => $dispatch('notify', { msg: 'Save failed: ' + err, type: 'error' }))
                     .finally(() => saving = false);
                 ">
-            <div class="absolute inset-0 w-full h-full bg-white/10 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out skew-x-[-20deg]"></div>
-            <svg x-show="saving" class="animate-spin w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            <div
+                class="absolute inset-0 w-full h-full bg-white/10 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out skew-x-[-20deg]">
+            </div>
+            <svg x-show="saving" class="animate-spin w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke-width="4" />
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
             <span x-text="saving ? 'Saving…' : 'Save Preferences'"></span>
         </button>
     </div>
@@ -116,8 +153,15 @@
 </div>
 
 <style>
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 </style>
