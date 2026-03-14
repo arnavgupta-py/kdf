@@ -7,9 +7,9 @@ class Settings(BaseSettings):
     # SQLite Configuration
     SQLITE_URL: str = "sqlite:///./cronos.db"
     
-    # Qdrant Configuration
-    QDRANT_URL: str = "http://localhost:6333"
-    
+    # SQLite Configuration
+    SQLITE_URL: str = "sqlite:///./cronos.db"
+
     # Telemetry Engine gRPC config
     TELEMETRY_GRPC_URL: str = "http://localhost:50051"
 

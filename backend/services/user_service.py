@@ -1,19 +1,39 @@
+import os
+import hashlib
+import json
 from sqlalchemy.orm import Session
 from backend.models.user import User
 from backend.models.journey import Journey
 from backend.schemas.user import UserCreate, UserUpdate
 from loguru import logger
-import json
+
+
+def hash_password(password: str) -> str:
+    """Hash a password with PBKDF2-HMAC-SHA256 and a random 32-byte salt."""
+    salt = os.urandom(32)
+    key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100_000)
+    return salt.hex() + "$" + key.hex()
+
+
+def verify_password(password: str, stored_hash: str) -> bool:
+    """Verify a plaintext password against a stored PBKDF2 hash."""
+    try:
+        salt_hex, key_hex = stored_hash.split("$")
+        salt = bytes.fromhex(salt_hex)
+        key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100_000)
+        return key.hex() == key_hex
+    except (ValueError, AttributeError):
+        return False
 
 def get_user_by_email(db: Session, email: str) -> User | None:
     return db.query(User).filter(User.email == email).first()
 
 def create_user(db: Session, user_in: UserCreate) -> User:
-    # MVP hash emulation
-    fake_hashed_password = user_in.password + "notreallyhashed"
+    # Real PBKDF2-HMAC-SHA256 password hashing
+    hashed = hash_password(user_in.password)
     db_obj = User(
         email=user_in.email,
-        hashed_password=fake_hashed_password,
+        hashed_password=hashed,
         full_name=user_in.full_name,
         is_active=user_in.is_active,
         is_superuser=user_in.is_superuser
@@ -109,12 +129,20 @@ def infer_user_preferences(db: Session, user_id: str) -> dict:
     # Normalize state vector
     state = [min(total_journeys / 100.0, 1.0), min(max(0.0, avg_delay_normalized) / 3600.0, 1.0), 0.5, 0.5, 0.5]
     
-    # 3. Simulate PPO Environment Reward based on user adherence
-    # A positive reward is given if the user frequently chooses the suggested path
-    # Here we mock the RL training loop step
-    # PPO agent updates via update_policy
-    if total_journeys > 5:
-        ppo_agent.update_policy([state], [[0.5, 0.5, 0.5]], [0.8], [state])
+    # 3. Dynamic PPO Environment Reward based on historical schedule adherence
+    # We compare actual vs predicted arrival to see if user was satisfied with route
+    latest_reward = 0.5
+    recent_journeys = [j for j in user_journeys if j.actual_arrival_time and j.predicted_arrival_time]
+    if recent_journeys:
+        j = recent_journeys[-1]
+        # Calculate error in seconds
+        error = abs((j.actual_arrival_time - j.predicted_arrival_time).total_seconds())
+        # Reward is high if error is low (under 5 mins)
+        latest_reward = max(0.0, 1.0 - (error / 1800.0)) 
+    
+    # Mock RL training step with the dynamic reward signal
+    if total_journeys > 1:
+        ppo_agent.update_policy([state], [[0.5, 0.5, 0.5]], [latest_reward], [state])
     
     # 4. Predict new preferences using the PPO Actor
     with torch.no_grad():

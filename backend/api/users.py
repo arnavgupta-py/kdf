@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Any
 from backend.schemas.user import User, UserCreate
-from backend.services.user_service import get_user_by_email, create_user, parse_user_preferences, update_user_preferences
+from backend.services.user_service import get_user_by_email, create_user, parse_user_preferences, update_user_preferences, verify_password
 from backend.db.sqlite import get_db
 from pydantic import BaseModel, field_validator
 from typing import Dict
@@ -26,6 +26,33 @@ def register_user(
         )
     user = create_user(db, user_in=user_in)
 
+    user_dict = {
+        **user.__dict__,
+        "preferences": parse_user_preferences(user)
+    }
+    return user_dict
+
+
+class LoginIn(BaseModel):
+    email: str
+    password: str
+
+
+@router.post("/login")
+def login(
+    *,
+    db: Session = Depends(get_db),
+    login_in: LoginIn,
+) -> Any:
+    """
+    Authenticate user and return profile.
+    """
+    user = get_user_by_email(db, email=login_in.email)
+    if not user or not verify_password(login_in.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+        )
     user_dict = {
         **user.__dict__,
         "preferences": parse_user_preferences(user)

@@ -24,7 +24,8 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </div>
                     <div>
-                        {% set dep_mins = ((option.departure_time % 86400) // 60) | int %}
+                        {# Add 19800 seconds (5.5 hours) for IST Mumbai Time #}
+                        {% set dep_mins = (((option.departure_time + 19800) % 86400) // 60) | int %}
                         {% set dep_hh = (dep_mins // 60) % 24 %}
                         {% set dep_mm = dep_mins % 60 %}
                         {% set ampm = 'AM' if dep_hh < 12 else 'PM' %}

@@ -2,7 +2,7 @@ import time
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query
 from backend.schemas.forecast import ForecastResponse, ForecastNode, CausalFactor
-from backend.services.graph_builder import GraphBuilder
+from backend.services.graph_builder import get_graph_builder
 from backend.services.causal_inference import CausalInferenceEngine
 import torch
 from loguru import logger
@@ -14,10 +14,10 @@ causal_engine = CausalInferenceEngine()
 import os
 from backend.models.stgnn import STGNNModel
 
-# Initialise the network graph once at module load (warm cache = ~14 ms)
+# Initialise the network graph via the shared singleton
 _canvas_nodes: list = []
 try:
-    graph_builder = GraphBuilder("Bandra, Mumbai, India", use_cache=True)
+    graph_builder = get_graph_builder()
     pyg_data, node_mapping = graph_builder.get_pytorch_geometric_data()
     logger.info(f"Graph initialised: {pyg_data.num_nodes} nodes.")
 
@@ -127,9 +127,12 @@ async def get_forecast(
                     # Apply real-time 5-millisecond latency fresh constraint
                     x_input[idx] = x_input[idx] * 0.0 + live_occupancy[node_id_str]
                 else:
-                    # Provide a baseline historical state that varies per location
-                    hasher = hash(node_id_str) % 100
-                    x_input[idx] = x_input[idx] * (hasher / 200.0 + 0.3)
+                    # Use real graph-wide avg congestion as a baseline for the model input
+                    area_stats = graph_builder.estimate_area_congestion()
+                    avg_cong = area_stats.get("avg_congestion", 0.5)
+                    # Add a small amount of node-specific variation so the GNN has structure
+                    node_var = (float(hash(node_id_str) % 100) / 1000.0) - 0.05
+                    x_input[idx] = x_input[idx] * 0.0 + max(0.01, min(0.99, avg_cong + node_var))
 
             with torch.no_grad():
                 edge_weight = pyg_data.edge_attr.squeeze(-1)

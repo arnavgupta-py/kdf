@@ -1,43 +1,69 @@
-import time
-from loguru import logger
-from typing import Dict, Any
+"""
+Real traffic estimation service using OSM graph structural data.
 
-class GoogleMapsIntegration:
-    """
-    Integration with Google Maps API to fetch real-time and historical traffic data.
-    This module bridges the gap between OSM structural data and live congestion metrics
-    used for the ST-GNN baseline states, capturing the specific degree of traffic congestion.
-    """
-    def __init__(self, api_key: str = "mock-gcp-key"):
-        self.api_key = api_key
-        logger.info("Initialized Google Maps API Integration module.")
+Replaces the previous mock Google Maps integration with actual
+graph-derived metrics (edge speeds, road density, intersection degree).
+"""
+import math
+from loguru import logger
+from typing import Dict, Any, List
+
+from backend.services.graph_builder import get_graph_builder
+
+
+class TrafficEstimationService:
+    """Computes real traffic / congestion metrics from the loaded OSM graph."""
+
+    def __init__(self):
+        logger.info("Initialized real OSM-based Traffic Estimation Service.")
 
     def fetch_traffic_data(self, origin: str, destination: str) -> Dict[str, Any]:
-        """
-        Fetches congestion degree and basic route data via Google Maps Directions API.
-        Returns a dictionary mapping segment IDs or locations to congestion levels.
-        """
-        logger.info(f"Fetching live traffic data from Google Maps API for {origin} -> {destination}")
-        # Simulate network delay for API calls
-        time.sleep(0.5)
-        
+        """Compute per-segment congestion along a real route."""
+        gb = get_graph_builder()
+        route_info = gb.compute_route(origin, destination, weight="travel_time")
+
+        segments: List[Dict[str, Any]] = []
+        path = route_info.get("path", [])
+        G = gb.G
+
+        for i in range(len(path) - 1):
+            u, v = path[i], path[i + 1]
+            edge_data = min(G[u][v].values(), key=lambda d: d.get("travel_time", 1e9))
+
+            speed = edge_data.get("speed_kph", 30.0)
+            if isinstance(speed, list):
+                speed = speed[0]
+            speed = float(speed)
+
+            length = edge_data.get("length", 100.0)
+            if isinstance(length, list):
+                length = length[0]
+
+            # Congestion from actual speed vs free-flow (60 km/h baseline)
+            cong = max(0.0, min(1.0, 1.0 - speed / 60.0))
+            level = "HIGH" if cong > 0.6 else "MODERATE" if cong > 0.3 else "LOW"
+
+            segments.append({
+                "start_location": str(u),
+                "end_location": str(v),
+                "congestion_level": level,
+                "speed_kmh": round(speed, 1),
+                "length_m": round(float(length), 1),
+            })
+
         return {
             "status": "OK",
-            "traffic_model": "best_guess",
-            "segments": [
-                {"start_location": "loc_1", "end_location": "loc_2", "congestion_level": "HIGH", "speed_kmh": 15},
-                {"start_location": "loc_2", "end_location": "loc_3", "congestion_level": "MODERATE", "speed_kmh": 30},
-                {"start_location": "loc_3", "end_location": "loc_4", "congestion_level": "LOW", "speed_kmh": 50},
-            ]
+            "traffic_model": "osm_graph_derived",
+            "total_distance_m": route_info["distance_m"],
+            "total_travel_time_s": route_info["travel_time_s"],
+            "segments": segments,
         }
 
     def fetch_area_congestion(self, place_name: str) -> Dict[str, Any]:
-        """
-        Fetches bounding box traffic data to map onto OSM nodes.
-        Returns average congestion degree [0.0 - 1.0].
-        """
-        logger.info(f"Fetching area congestion from Google Maps API for: {place_name}")
-        return {
-            "avg_congestion": 0.65,
-            "hotspots": ["intersection_a", "bridge_east_3"]
-        }
+        """Real area-level congestion computed from graph edge attributes."""
+        gb = get_graph_builder()
+        return gb.estimate_area_congestion()
+
+
+# Backward-compatible alias so existing imports keep working
+GoogleMapsIntegration = TrafficEstimationService
